@@ -1,6 +1,7 @@
 package com.gestioncomercial.gestion_comercial;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 //reglas y comporbaciones
@@ -35,6 +36,19 @@ public class EmpresaService {
     public Empresas crear(Empresas empresa) {
         validarEmpresas(empresa);
         return empresaRepository.save(empresa);
+    }
+
+    // crea varias empresas de golpe: o se guardan todas o ninguna
+    @Transactional
+    public List<Empresas> crearLote(List<Empresas> empresas) {
+        if (empresas == null || empresas.isEmpty()) {
+            throw new RuntimeException("La lista de empresas no puede estar vacía");
+        }
+        // primero se validan todas; si una falla, no se guarda ninguna
+        for (Empresas empresa : empresas) {
+            validarEmpresas(empresa);
+        }
+        return empresaRepository.saveAll(empresas);
     }
 
     public Empresas actualizar(Long id, Empresas datos) {

@@ -52,6 +52,12 @@ public class EmpresaController {
         return empresaService.crear(empresa);
     }
 
+    @PostMapping("/lote")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<Empresas> crearLote(@RequestBody List<Empresas> empresas) {
+        return empresaService.crearLote(empresas);
+    }
+
     @PutMapping("/{id}")
     public Empresas actualizarEmpresas(@PathVariable Long id, @RequestBody Empresas empresa) {
         return empresaService.actualizar(id, empresa);
