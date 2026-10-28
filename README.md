@@ -1,98 +1,119 @@
-# Gestión Comercial
+# Gestión Comercial — CRM
 
-API REST para gestionar **empresas** (clientes o potenciales clientes): crearlas, consultarlas, filtrarlas, actualizarlas y borrarlas.
+Backend de un **CRM (Customer Relationship Management)** desarrollado con **Spring Boot**, orientado a la gestión de la cartera comercial de una empresa: clientes, potenciales clientes y, en próximas versiones, contactos, oportunidades de venta y actividades comerciales.
 
-Proyecto de aprendizaje con **Spring Boot**.
+La versión actual implementa el módulo de **Empresas**, que constituye la base sobre la que se construirán el resto de módulos del sistema.
+
+> **Estado:** en desarrollo activo. Consulta la [hoja de ruta](#hoja-de-ruta) para ver las funcionalidades previstas.
 
 ---
 
-## Tecnologías
+## Índice
 
-| Tecnología | Versión | Para qué se usa |
+- [Stack tecnológico](#stack-tecnológico)
+- [Puesta en marcha](#puesta-en-marcha)
+- [Arquitectura](#arquitectura)
+- [Modelo de datos](#modelo-de-datos)
+- [API REST](#api-rest)
+- [Reglas de validación](#reglas-de-validación)
+- [Pruebas](#pruebas)
+- [Hoja de ruta](#hoja-de-ruta)
+- [Limitaciones conocidas](#limitaciones-conocidas)
+
+---
+
+## Stack tecnológico
+
+| Tecnología | Versión | Uso |
 |---|---|---|
-| Java | 25 | Lenguaje del proyecto |
-| Spring Boot | 4.1.2 | Framework base |
-| Spring Web MVC | — | Crear los endpoints REST (`@RestController`) |
-| Spring Data JPA | — | Acceder a la base de datos sin escribir SQL |
-| H2 | — | Base de datos en memoria (se borra al parar la app) |
-| H2 Console | — | Ver la base de datos desde el navegador |
-| Lombok | — | Reducir código repetitivo (getters, setters...) |
-| DevTools | — | Reinicio automático al cambiar código |
-| Maven | — | Compilar y gestionar dependencias |
+| Java | 25 | Lenguaje de desarrollo |
+| Spring Boot | 4.1.2 | Framework principal |
+| Spring Web MVC | — | Exposición de la API REST |
+| Spring Data JPA | — | Capa de persistencia y consultas |
+| H2 Database | — | Base de datos en memoria para desarrollo |
+| Lombok | — | Reducción de código repetitivo |
+| Spring DevTools | — | Recarga automática en desarrollo |
+| Maven | — | Gestión de dependencias y construcción |
 
 ---
 
-## Cómo arrancarlo
+## Puesta en marcha
+
+### Requisitos
+
+- JDK 25
+- No es necesario instalar Maven: el proyecto incluye Maven Wrapper (`mvnw`).
+
+### Ejecución
 
 ```bash
+# Linux / macOS
 ./mvnw spring-boot:run
-```
 
-En Windows (PowerShell):
-
-```powershell
+# Windows (PowerShell)
 .\mvnw.cmd spring-boot:run
 ```
 
-La API queda en `http://localhost:8080`.
+La API queda disponible en `http://localhost:8080`.
 
-### Consola de la base de datos (H2)
+### Consola de base de datos (H2)
 
-| Campo | Valor |
+| Parámetro | Valor |
 |---|---|
-| URL en el navegador | `http://localhost:8080/h2-console` |
+| URL | `http://localhost:8080/h2-console` |
 | JDBC URL | `jdbc:h2:mem:gestiondb` |
 | Usuario | `sa` |
 | Contraseña | *(vacía)* |
 
-> Como la base de datos está **en memoria**, los datos se pierden cada vez que se reinicia la aplicación.
+> La base de datos H2 se ejecuta en memoria: los datos se eliminan al detener la aplicación. Está prevista la migración a una base de datos persistente (ver [hoja de ruta](#hoja-de-ruta)).
 
 ---
 
-## Arquitectura (capas)
+## Arquitectura
 
-Cada petición pasa por estas capas, de arriba a abajo:
+El proyecto sigue una **arquitectura en capas**, separando la exposición HTTP, la lógica de negocio y el acceso a datos:
 
 ```
-Cliente (Postman, navegador...)
-        │  HTTP
-        ▼
-EmpresaController   → recibe la petición y devuelve la respuesta
-        │
-        ▼
-EmpresaService      → reglas de negocio y validaciones
-        │
-        ▼
-EmpresaRepository   → habla con la base de datos
-        │
-        ▼
-Base de datos H2    → tabla EMPRESAS
+Cliente HTTP
+     │
+     ▼
+Controller   → Expone los endpoints REST y gestiona las respuestas HTTP
+     │
+     ▼
+Service      → Lógica de negocio, validaciones y control transaccional
+     │
+     ▼
+Repository   → Acceso a datos mediante Spring Data JPA
+     │
+     ▼
+Base de datos
 ```
 
-| Archivo | Capa | Qué hace |
+### Componentes del módulo Empresas
+
+| Componente | Capa | Responsabilidad |
 |---|---|---|
-| [GestionComercialApplication.java](src/main/java/com/gestioncomercial/gestion_comercial/GestionComercialApplication.java) | Arranque | Punto de entrada de la aplicación |
-| [Empresas.java](src/main/java/com/gestioncomercial/gestion_comercial/Empresas.java) | Entidad | Representa la tabla `EMPRESAS` (`@Entity`) |
-| [EmpresaController.java](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaController.java) | Controlador | Define los endpoints en `/api/empresas` |
-| [EmpresaService.java](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaService.java) | Servicio | Valida datos y coordina las operaciones |
-| [EmpresaRepository.java](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaRepository.java) | Repositorio | Acceso a datos (`JpaRepository` + `JpaSpecificationExecutor`) |
-| [EmpresaSpecifications.java](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaSpecifications.java) | Repositorio | 🚧 En construcción: filtros dinámicos |
-| [dto/EmpresaResquest.java](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResquest.java) | DTO | 🚧 En construcción: datos de entrada |
-| [dto/EmpresaResponse.java](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResponse.java) | DTO | 🚧 En construcción: datos de salida |
+| [GestionComercialApplication](src/main/java/com/gestioncomercial/gestion_comercial/GestionComercialApplication.java) | Arranque | Punto de entrada de la aplicación |
+| [Empresas](src/main/java/com/gestioncomercial/gestion_comercial/Empresas.java) | Dominio | Entidad JPA mapeada a la tabla `EMPRESAS` |
+| [EmpresaController](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaController.java) | Presentación | Endpoints REST bajo `/api/empresas` |
+| [EmpresaService](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaService.java) | Negocio | Validaciones y orquestación de operaciones |
+| [EmpresaRepository](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaRepository.java) | Persistencia | `JpaRepository` + `JpaSpecificationExecutor` |
+| [EmpresaSpecifications](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaSpecifications.java) | Persistencia | Filtros dinámicos combinables (JPA Specifications) |
+| [EmpresaResquest](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResquest.java) / [EmpresaResponse](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResponse.java) | DTO | Contratos de entrada y salida de la API *(en desarrollo)* |
 
 ---
 
-## Modelo de datos: `Empresas`
+## Modelo de datos
+
+### Empresa
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `id` | `Long` | Se genera solo | Clave primaria autoincremental (`IDENTITY`) |
-| `nombre` | `String` | ✅ | Nombre de la empresa |
-| `sector` | `String` | ✅ | Sector (ej. Tecnología, Hostelería) |
-| `provincia` | `String` | ✅ | Provincia donde está |
-| `estado` | `String` | ✅ | Estado comercial (ej. Activa, Potencial) |
-
-Ejemplo en JSON:
+| `id` | `Long` | Autogenerado | Identificador único |
+| `nombre` | `String` | Sí | Razón social o nombre comercial |
+| `sector` | `String` | Sí | Sector de actividad |
+| `provincia` | `String` | Sí | Provincia de la sede |
+| `estado` | `String` | Sí | Situación comercial (p. ej. `Activa`, `Potencial`, `Inactiva`) |
 
 ```json
 {
@@ -106,24 +127,25 @@ Ejemplo en JSON:
 
 ---
 
-## Endpoints
+## API REST
 
-Ruta base: `/api/empresas`
+**Ruta base:** `/api/empresas`
 
-| Método | Ruta | Qué hace | Respuesta OK |
+| Método | Endpoint | Descripción | Respuesta |
 |---|---|---|---|
-| `GET` | `/api/empresas` | Lista todas las empresas | `200 OK` |
-| `GET` | `/api/empresas/{id}` | Busca una empresa por id | `200 OK` |
-| `GET` | `/api/empresas/provincia/{provincia}` | Filtra por provincia | `200 OK` |
-| `GET` | `/api/empresas/sector/{sector}` | Filtra por sector | `200 OK` |
-| `POST` | `/api/empresas` | Crea una empresa | `201 Created` |
-| `POST` | `/api/empresas/lote` | Crea varias empresas a la vez | `201 Created` |
-| `PUT` | `/api/empresas/{id}` | Actualiza una empresa | `200 OK` |
-| `DELETE` | `/api/empresas/{id}` | Borra una empresa | `204 No Content` |
+| `GET` | `/api/empresas` | Listar todas las empresas | `200 OK` |
+| `GET` | `/api/empresas/{id}` | Obtener una empresa por su identificador | `200 OK` |
+| `GET` | `/api/empresas/buscar` | Búsqueda con filtros combinables (`nombre`, `sector`, `provincia`, `estado`) | `200 OK` |
+| `GET` | `/api/empresas/provincia/{provincia}` | Filtrar empresas por provincia | `200 OK` |
+| `GET` | `/api/empresas/sector/{sector}` | Filtrar empresas por sector | `200 OK` |
+| `POST` | `/api/empresas` | Registrar una empresa | `201 Created` |
+| `POST` | `/api/empresas/lote` | Registrar varias empresas en una única operación | `201 Created` |
+| `PUT` | `/api/empresas/{id}` | Actualizar una empresa existente | `200 OK` |
+| `DELETE` | `/api/empresas/{id}` | Eliminar una empresa | `204 No Content` |
 
-### Ejemplos
+### Ejemplos de uso
 
-**Crear una empresa**
+**Registrar una empresa**
 
 ```bash
 curl -X POST http://localhost:8080/api/empresas \
@@ -131,7 +153,7 @@ curl -X POST http://localhost:8080/api/empresas \
   -d '{"nombre":"Acme S.L.","sector":"Tecnología","provincia":"Madrid","estado":"Activa"}'
 ```
 
-**Crear varias de golpe (lote)**
+**Registro en lote**
 
 ```bash
 curl -X POST http://localhost:8080/api/empresas/lote \
@@ -142,9 +164,9 @@ curl -X POST http://localhost:8080/api/empresas/lote \
       ]'
 ```
 
-> El lote es **transaccional** (`@Transactional`): primero se validan todas; si una falla, **no se guarda ninguna**.
+> La operación en lote es **transaccional**: todos los registros se validan antes de persistirse y, si alguno no es válido, no se guarda ninguno.
 
-**Listar / buscar**
+**Consultas**
 
 ```bash
 curl http://localhost:8080/api/empresas
@@ -153,7 +175,16 @@ curl http://localhost:8080/api/empresas/provincia/Madrid
 curl http://localhost:8080/api/empresas/sector/Tecnología
 ```
 
-**Actualizar**
+**Búsqueda con filtros combinables**
+
+Todos los parámetros son opcionales y se combinan entre sí (condición `AND`). El filtro `nombre` busca coincidencias parciales sin distinguir mayúsculas.
+
+```bash
+curl "http://localhost:8080/api/empresas/buscar?provincia=Madrid&sector=Tecnología"
+curl "http://localhost:8080/api/empresas/buscar?nombre=acme&estado=Activa"
+```
+
+**Actualización**
 
 ```bash
 curl -X PUT http://localhost:8080/api/empresas/1 \
@@ -161,7 +192,7 @@ curl -X PUT http://localhost:8080/api/empresas/1 \
   -d '{"nombre":"Acme S.L.","sector":"Tecnología","provincia":"Barcelona","estado":"Inactiva"}'
 ```
 
-**Borrar**
+**Eliminación**
 
 ```bash
 curl -X DELETE http://localhost:8080/api/empresas/1
@@ -169,61 +200,57 @@ curl -X DELETE http://localhost:8080/api/empresas/1
 
 ---
 
-## Validaciones (en `EmpresaService`)
+## Reglas de validación
 
-| Situación | Mensaje de error |
+Las validaciones se aplican en la capa de servicio (`EmpresaService`):
+
+| Condición | Mensaje |
 |---|---|
-| `nombre` vacío o nulo | `El nombre de la empresa es obligatorio` |
-| `sector` vacío o nulo | `El sector de la empresa es obligatorio` |
-| `provincia` vacía o nula | `La provincia de la empresa es obligatoria` |
-| `estado` vacío o nulo | `El estado de la empresa es obligatorio` |
-| Lote vacío o nulo | `La lista de empresas no puede estar vacía` |
-| El id no existe (buscar, actualizar, borrar) | `Empresa no encontrada con id {id}` |
-
-> ⚠️ Ahora mismo estos errores se lanzan como `RuntimeException`, así que la API responde **500** en todos los casos. Lo ideal sería devolver **400** (datos incorrectos) y **404** (no encontrada).
+| `nombre` nulo o vacío | `El nombre de la empresa es obligatorio` |
+| `sector` nulo o vacío | `El sector de la empresa es obligatorio` |
+| `provincia` nula o vacía | `La provincia de la empresa es obligatoria` |
+| `estado` nulo o vacío | `El estado de la empresa es obligatorio` |
+| Lote nulo o vacío | `La lista de empresas no puede estar vacía` |
+| Identificador inexistente | `Empresa no encontrada con id {id}` |
 
 ---
 
-## Códigos HTTP de referencia
+## Pruebas
 
-| Código | Nombre | Significado |
+Todos los endpoints de la API han sido verificados mediante **pruebas funcionales con Postman**, cubriendo:
+
+- Operaciones CRUD completas sobre empresas.
+- Filtros por provincia y sector, y búsqueda con filtros combinables.
+- Registro en lote, incluido el comportamiento transaccional ante datos no válidos.
+- Respuestas ante datos obligatorios ausentes e identificadores inexistentes.
+
+La incorporación de **tests automatizados** (JUnit + MockMvc) forma parte de la hoja de ruta.
+
+---
+
+## Hoja de ruta
+
+El objetivo del proyecto es evolucionar hacia un CRM completo. Funcionalidades planificadas:
+
+| Fase | Funcionalidad | Estado |
 |---|---|---|
-| 200 | OK | Todo bien, aquí tienes los datos |
-| 201 | Created | Todo bien, he creado algo nuevo |
-| 204 | No Content | Todo bien, pero no te devuelvo nada |
-| 400 | Bad Request | Me has enviado datos incorrectos |
-| 404 | Not Found | Eso no existe |
-| 500 | Internal Server Error | Ha fallado algo en el servidor |
+| 1 | Gestión de empresas (CRUD, filtros, alta en lote) | Completado |
+| 1 | Filtros dinámicos combinables con JPA Specifications | Completado |
+| 1 | DTOs de entrada y salida | En desarrollo |
+| 1 | Gestión centralizada de errores (`@RestControllerAdvice`) con respuestas 400 / 404 | Pendiente |
+| 1 | Tests automatizados de integración | Pendiente |
+| 2 | Gestión de **contactos** asociados a cada empresa | Pendiente |
+| 2 | Gestión de **oportunidades de venta** y embudo comercial | Pendiente |
+| 2 | Registro de **actividades** (llamadas, reuniones, correos, tareas) | Pendiente |
+| 3 | **Usuarios, autenticación y roles** (Spring Security + JWT) | Pendiente |
+| 3 | Paginación y ordenación de resultados | Pendiente |
+| 3 | Documentación interactiva de la API (OpenAPI / Swagger) | Pendiente |
+| 3 | Base de datos persistente (PostgreSQL / MySQL) | Pendiente |
+| 4 | Panel de métricas comerciales e informes | Pendiente |
 
 ---
 
-## Estado del proyecto
+## Limitaciones conocidas
 
-### Hecho ✅
-
-- Entidad `Empresas` con JPA y base de datos H2
-- CRUD completo de empresas
-- Filtros por provincia y por sector
-- Alta de empresas en lote (transaccional)
-- Validación de campos obligatorios
-
-### En curso 🚧 (rama `feat/empresas`)
-
-- `EmpresaSpecifications`: filtros dinámicos combinables (ej. provincia **y** sector a la vez). El repositorio ya extiende `JpaSpecificationExecutor`.
-- DTOs `EmpresaResquest` / `EmpresaResponse`: separar lo que entra y sale de la API de la entidad.
-
-### Pendiente 📝
-
-- Manejo de errores con `@RestControllerAdvice` para devolver 400 / 404
-- Tests de los endpoints
-- Base de datos persistente (ej. PostgreSQL o MySQL)
-
----
-
-## Historial
-
-| Commit | Descripción |
-|---|---|
-| `f5c8553` | Inicio del proyecto |
-| `3cfda8d` | Gestión de empresas |
-| `d5ee826` | Creación de la API |
+- Los errores de validación y de recurso no encontrado se devuelven actualmente como `500 Internal Server Error`. Se corregirá con la gestión centralizada de errores prevista en la fase 1.
+- La base de datos en memoria no conserva los datos entre reinicios.

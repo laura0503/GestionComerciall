@@ -1,5 +1,6 @@
 package com.gestioncomercial.gestion_comercial;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -19,7 +20,8 @@ public class EmpresaService {
     }
 
     public Empresas buscarPorId(Long id) {
-        return empresaRepository.findById(id).orElseThrow(() -> new RuntimeException("Empresa no encontrada con id " + id));
+        return empresaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con id " + id));
         // orElseThrow: "dame lo que hay en la caja o, si está vacía, lanza este error".
         // () -> new RuntimeException(...): es una lambda, una función corta sin nombre
         // que crea el error solo si hace falta.
@@ -81,6 +83,14 @@ public class EmpresaService {
         if (empresa.getEstado() == null || empresa.getEstado().isBlank()) {
             throw new RuntimeException("El estado de la empresa es obligatorio");
         }
+    }
+
+    public List<Empresas> buscar(String nombre, String sector, String provincia, String estado) {
+        Specification<Empresas> spec = EmpresaSpecifications.nombreContiene(nombre)
+                .and(EmpresaSpecifications.conSector(sector))
+                .and(EmpresaSpecifications.conProvincia(provincia))
+                .and(EmpresaSpecifications.conEstado(estado));
+        return empresaRepository.findAll(spec);
     }
 
 }

@@ -2,13 +2,12 @@ package com.gestioncomercial.gestion_comercial;
 
 import java.util.List;
 
-import org.aspectj.weaver.ast.Not;
-import org.hibernate.Internal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,6 +66,15 @@ public class EmpresaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminarEmpresa(@PathVariable Long id) {
         empresaService.borrar(id);
+    }
+
+    @GetMapping("/buscar")
+    public List<Empresas> buscar(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String sector,
+            @RequestParam(required = false) String provincia,
+            @RequestParam(required = false) String estado) {
+        return empresaService.buscar(nombre, sector, provincia, estado);
     }
 
     /*
