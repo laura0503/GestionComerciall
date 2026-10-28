@@ -4,6 +4,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
 
 //reglas y comporbaciones
 @Service
@@ -21,9 +22,9 @@ public class EmpresaService {
 
     public Empresas buscarPorId(Long id) {
         return empresaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con id " + id));
+                .orElseThrow(() -> new EmpresaNoEncontradaException(id));
         // orElseThrow: "dame lo que hay en la caja o, si está vacía, lanza este error".
-        // () -> new RuntimeException(...): es una lambda, una función corta sin nombre
+        // () -> new EmpresaNoEncontradaException(id): es una lambda, una función corta sin nombre
         // que crea el error solo si hace falta.
     }
 
@@ -44,7 +45,7 @@ public class EmpresaService {
     @Transactional
     public List<Empresas> crearLote(List<Empresas> empresas) {
         if (empresas == null || empresas.isEmpty()) {
-            throw new RuntimeException("La lista de empresas no puede estar vacía");
+            throw new IllegalArgumentException("La lista de empresas no puede estar vacía");
         }
         // primero se validan todas; si una falla, no se guarda ninguna
         for (Empresas empresa : empresas) {
@@ -72,16 +73,16 @@ public class EmpresaService {
 
     private void validarEmpresas(Empresas empresa) {
         if (empresa.getNombre() == null || empresa.getNombre().isBlank()) {
-            throw new RuntimeException("El nombre de la empresa es obligatorio");
+            throw new IllegalArgumentException("El nombre de la empresa es obligatorio");
         }
         if (empresa.getSector() == null || empresa.getSector().isBlank()) {
-            throw new RuntimeException("El sector de la empresa es obligatorio");
+            throw new IllegalArgumentException("El sector de la empresa es obligatorio");
         }
         if (empresa.getProvincia() == null || empresa.getProvincia().isBlank()) {
-            throw new RuntimeException("La provincia de la empresa es obligatoria");
+            throw new IllegalArgumentException("La provincia de la empresa es obligatoria");
         }
         if (empresa.getEstado() == null || empresa.getEstado().isBlank()) {
-            throw new RuntimeException("El estado de la empresa es obligatorio");
+            throw new IllegalArgumentException("El estado de la empresa es obligatorio");
         }
     }
 
