@@ -31,6 +31,12 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(status.value(), mensaje, LocalDateTime.now());
         return ResponseEntity.status(status).body(error);
     }
+
+    // contacto no existe → 404
+    @ExceptionHandler(ContactoNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> contactoNoEncontrado(ContactoNoEncontradoException e) {
+        return construir(HttpStatus.NOT_FOUND, e.getMessage());
+    }
     /*
      * HttpStatus.NOT_FOUND Una constante de Spring que representa el 404. Es más
      * legible que escribir 404

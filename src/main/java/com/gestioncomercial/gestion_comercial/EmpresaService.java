@@ -94,7 +94,7 @@ public class EmpresaService {
     // convierte una lista de entidades en una lista de DTOs
     private List<EmpresaResponse> aResponse(List<Empresas> empresas) {
         return empresas.stream() // recorre la lista
-                .map(EmpresaResponse::desde)
+                .map(EmpresaResponse::desde) // A cada empresa le aplica desde() y la convierte en DTO
                 .toList();
     }
     /*
