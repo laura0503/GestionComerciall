@@ -1,5 +1,8 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.dto.EmpresaRequest;
+import com.gestioncomercial.gestion_comercial.dto.EmpresaResponse;
+
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,82 +19,106 @@ public class EmpresaService {
         this.empresaRepository = empresaRepository;
     }
 
-    public List<Empresas> listar() {
-        return empresaRepository.findAll();
+    public List<EmpresaResponse> listar() {
+        return aResponse(empresaRepository.findAll());
     }
 
-    public Empresas buscarPorId(Long id) {
-        return empresaRepository.findById(id)
-                .orElseThrow(() -> new EmpresaNoEncontradaException(id));
-        // orElseThrow: "dame lo que hay en la caja o, si está vacía, lanza este error".
-        // () -> new EmpresaNoEncontradaException(id): es una lambda, una función corta sin nombre
-        // que crea el error solo si hace falta.
+    public EmpresaResponse buscarPorId(Long id) {
+        return EmpresaResponse.desde(obtenerEntidad(id));
     }
 
-    public List<Empresas> buscarPorProvincia(String provincia) {
-        return empresaRepository.findByProvincia(provincia);
+    public List<EmpresaResponse> buscarPorProvincia(String provincia) {
+        return aResponse(empresaRepository.findByProvincia(provincia));
     }
 
-    public List<Empresas> buscarPorSector(String sector) {
-        return empresaRepository.findBySector(sector);
+    public List<EmpresaResponse> buscarPorSector(String sector) {
+        return aResponse(empresaRepository.findBySector(sector));
     }
 
-    public Empresas crear(Empresas empresa) {
-        validarEmpresas(empresa);
-        return empresaRepository.save(empresa);
+    public EmpresaResponse crear(EmpresaRequest request) {
+        validarEmpresas(request);
+        Empresas guardada = empresaRepository.save(request.aEntidad());
+        return EmpresaResponse.desde(guardada);
     }
 
     // crea varias empresas de golpe: o se guardan todas o ninguna
     @Transactional
-    public List<Empresas> crearLote(List<Empresas> empresas) {
-        if (empresas == null || empresas.isEmpty()) {
+    public List<EmpresaResponse> crearLote(List<EmpresaRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
             throw new IllegalArgumentException("La lista de empresas no puede estar vacía");
         }
         // primero se validan todas; si una falla, no se guarda ninguna
-        for (Empresas empresa : empresas) {
-            validarEmpresas(empresa);
+        for (EmpresaRequest request : requests) {
+            validarEmpresas(request);
         }
-        return empresaRepository.saveAll(empresas);
+        List<Empresas> entidades = requests.stream()
+                .map(EmpresaRequest::aEntidad)
+                .toList();
+        return aResponse(empresaRepository.saveAll(entidades));
     }
 
-    public Empresas actualizar(Long id, Empresas datos) {
+    public EmpresaResponse actualizar(Long id, EmpresaRequest datos) {
         validarEmpresas(datos);
-        Empresas existente = buscarPorId(id);
+        Empresas existente = obtenerEntidad(id);
 
-        existente.setNombre(datos.getNombre());
-        existente.setSector(datos.getSector());
-        existente.setProvincia(datos.getProvincia());
-        existente.setEstado(datos.getEstado());
+        existente.setNombre(datos.nombre());
+        existente.setSector(datos.sector());
+        existente.setProvincia(datos.provincia());
+        existente.setEstado(datos.estado());
 
-        return empresaRepository.save(existente);
+        return EmpresaResponse.desde(empresaRepository.save(existente));
     }
 
     public void borrar(Long id) {
-        buscarPorId(id); // si no existe, lanza "Empresa no encontrada"
+        obtenerEntidad(id); // si no existe, lanza "Empresa no encontrada"
         empresaRepository.deleteById(id);
     }
 
-    private void validarEmpresas(Empresas empresa) {
-        if (empresa.getNombre() == null || empresa.getNombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre de la empresa es obligatorio");
-        }
-        if (empresa.getSector() == null || empresa.getSector().isBlank()) {
-            throw new IllegalArgumentException("El sector de la empresa es obligatorio");
-        }
-        if (empresa.getProvincia() == null || empresa.getProvincia().isBlank()) {
-            throw new IllegalArgumentException("La provincia de la empresa es obligatoria");
-        }
-        if (empresa.getEstado() == null || empresa.getEstado().isBlank()) {
-            throw new IllegalArgumentException("El estado de la empresa es obligatorio");
-        }
-    }
-
-    public List<Empresas> buscar(String nombre, String sector, String provincia, String estado) {
+    public List<EmpresaResponse> buscar(String nombre, String sector, String provincia, String estado) {
         Specification<Empresas> spec = EmpresaSpecifications.nombreContiene(nombre)
                 .and(EmpresaSpecifications.conSector(sector))
                 .and(EmpresaSpecifications.conProvincia(provincia))
                 .and(EmpresaSpecifications.conEstado(estado));
-        return empresaRepository.findAll(spec);
+        return aResponse(empresaRepository.findAll(spec));
+    }
+
+    // busca la entidad en la BD; la usan buscarPorId, actualizar y borrar
+    private Empresas obtenerEntidad(Long id) {
+        return empresaRepository.findById(id)
+                .orElseThrow(() -> new EmpresaNoEncontradaException(id));
+        // orElseThrow: "dame lo que hay en la caja o, si está vacía, lanza este error".
+        // () -> new EmpresaNoEncontradaException(id): es una lambda, una función corta
+        // sin nombre que crea el error solo si hace falta.
+    }
+
+    // convierte una lista de entidades en una lista de DTOs
+    private List<EmpresaResponse> aResponse(List<Empresas> empresas) {
+        return empresas.stream() // recorre la lista
+                .map(EmpresaResponse::desde)
+                .toList();
+    }
+    /*
+     * Método Por qué hace falta
+     * obtenerEntidad actualizar y borrar necesitan la entidad (para modificarla o
+     * borrarla), pero buscarPorId va a devolver un DTO. Por eso la búsqueda en la
+     * BD pasa a un método propio
+     * aResponse Pasar de lista de entidades a lista de DTOs se repite 5 veces. Así
+     * se escribe una vez
+     */
+
+    private void validarEmpresas(EmpresaRequest empresa) {
+        if (empresa.nombre() == null || empresa.nombre().isBlank()) {
+            throw new IllegalArgumentException("El nombre de la empresa es obligatorio");
+        }
+        if (empresa.sector() == null || empresa.sector().isBlank()) {
+            throw new IllegalArgumentException("El sector de la empresa es obligatorio");
+        }
+        if (empresa.provincia() == null || empresa.provincia().isBlank()) {
+            throw new IllegalArgumentException("La provincia de la empresa es obligatoria");
+        }
+        if (empresa.estado() == null || empresa.estado().isBlank()) {
+            throw new IllegalArgumentException("El estado de la empresa es obligatorio");
+        }
     }
 
 }

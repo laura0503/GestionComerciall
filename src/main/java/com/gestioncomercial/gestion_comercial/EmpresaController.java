@@ -2,6 +2,9 @@ package com.gestioncomercial.gestion_comercial;
 
 import java.util.List;
 
+import com.gestioncomercial.gestion_comercial.dto.EmpresaRequest;
+import com.gestioncomercial.gestion_comercial.dto.EmpresaResponse;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,39 +29,39 @@ public class EmpresaController {
     }
 
     @GetMapping("/{id}")
-    public Empresas buscarPorId(@PathVariable Long id) {
+    public EmpresaResponse buscarPorId(@PathVariable Long id) {
         return empresaService.buscarPorId(id);
     }
 
     @GetMapping
-    public List<Empresas> listar() {
+    public List<EmpresaResponse> listar() {
         return empresaService.listar();
     }
 
     @GetMapping("/provincia/{provincia}")
-    public List<Empresas> buscarPorProvincia(@PathVariable String provincia) {
+    public List<EmpresaResponse> buscarPorProvincia(@PathVariable String provincia) {
         return empresaService.buscarPorProvincia(provincia);
     }
 
     @GetMapping("/sector/{sector}")
-    public List<Empresas> buscarPorSector(@PathVariable String sector) {
+    public List<EmpresaResponse> buscarPorSector(@PathVariable String sector) {
         return empresaService.buscarPorSector(sector);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Empresas crearEmpresas(@RequestBody Empresas empresa) {
+    public EmpresaResponse crearEmpresas(@RequestBody EmpresaRequest empresa) {
         return empresaService.crear(empresa);
     }
 
     @PostMapping("/lote")
     @ResponseStatus(HttpStatus.CREATED)
-    public List<Empresas> crearLote(@RequestBody List<Empresas> empresas) {
+    public List<EmpresaResponse> crearLote(@RequestBody List<EmpresaRequest> empresas) {
         return empresaService.crearLote(empresas);
     }
 
     @PutMapping("/{id}")
-    public Empresas actualizarEmpresas(@PathVariable Long id, @RequestBody Empresas empresa) {
+    public EmpresaResponse actualizarEmpresas(@PathVariable Long id, @RequestBody EmpresaRequest empresa) {
         return empresaService.actualizar(id, empresa);
     }
 
@@ -69,7 +72,7 @@ public class EmpresaController {
     }
 
     @GetMapping("/buscar")
-    public List<Empresas> buscar(
+    public List<EmpresaResponse> buscar(
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String sector,
             @RequestParam(required = false) String provincia,

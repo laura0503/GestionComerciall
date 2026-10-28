@@ -11,3 +11,9 @@ public interface EmpresaRepository extends JpaRepository<Empresas, Long>, JpaSpe
 
     List<Empresas> findBySector(String sector);
 }
+/*
+ * Cliente ⇄ JSON ⇄ Controller ⇄ Service ⇄ Repository ⇄ BD
+ * (la puerta) (reglas y (conexión)
+ * conversión)
+ * ◄── DTOs ──► ◄── Entidad ──►
+ */
