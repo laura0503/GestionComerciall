@@ -99,7 +99,13 @@ Base de datos
 | [EmpresaService](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaService.java) | Negocio | Validaciones y orquestación de operaciones |
 | [EmpresaRepository](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaRepository.java) | Persistencia | `JpaRepository` + `JpaSpecificationExecutor` |
 | [EmpresaSpecifications](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaSpecifications.java) | Persistencia | Filtros dinámicos combinables (JPA Specifications) |
-| [EmpresaResquest](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResquest.java) / [EmpresaResponse](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResponse.java) | DTO | Contratos de entrada y salida de la API *(en desarrollo)* |
+| [EmpresaRequest](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaRequest.java) | DTO | Datos de entrada que envía el cliente (sin `id`) |
+| [EmpresaResponse](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResponse.java) | DTO | Datos de salida que devuelve la API |
+| [GlobalExceptionHandler](src/main/java/com/gestioncomercial/gestion_comercial/exception/GlobalExceptionHandler.java) | Errores | Traduce las excepciones a respuestas `400` / `404` (`@RestControllerAdvice`) |
+| [EmpresaNoEncontradaException](src/main/java/com/gestioncomercial/gestion_comercial/exception/EmpresaNoEncontradaException.java) | Errores | Excepción para empresas inexistentes |
+| [ErrorResponse](src/main/java/com/gestioncomercial/gestion_comercial/exception/ErrorResponse.java) | Errores | Formato JSON común de las respuestas de error |
+
+La API nunca expone la entidad JPA: el servicio recibe un `EmpresaRequest`, opera con la entidad `Empresas` y devuelve un `EmpresaResponse`.
 
 ---
 
@@ -124,6 +130,8 @@ Base de datos
   "estado": "Activa"
 }
 ```
+
+> El `id` lo asigna la base de datos. Si el cliente lo incluye en el cuerpo de un `POST` o `PUT`, se ignora.
 
 ---
 
@@ -204,14 +212,24 @@ curl -X DELETE http://localhost:8080/api/empresas/1
 
 Las validaciones se aplican en la capa de servicio (`EmpresaService`):
 
-| Condición | Mensaje |
-|---|---|
-| `nombre` nulo o vacío | `El nombre de la empresa es obligatorio` |
-| `sector` nulo o vacío | `El sector de la empresa es obligatorio` |
-| `provincia` nula o vacía | `La provincia de la empresa es obligatoria` |
-| `estado` nulo o vacío | `El estado de la empresa es obligatorio` |
-| Lote nulo o vacío | `La lista de empresas no puede estar vacía` |
-| Identificador inexistente | `Empresa no encontrada con id {id}` |
+| Condición | Código | Mensaje |
+|---|---|---|
+| `nombre` nulo o vacío | `400` | `El nombre de la empresa es obligatorio` |
+| `sector` nulo o vacío | `400` | `El sector de la empresa es obligatorio` |
+| `provincia` nula o vacía | `400` | `La provincia de la empresa es obligatoria` |
+| `estado` nulo o vacío | `400` | `El estado de la empresa es obligatorio` |
+| Lote nulo o vacío | `400` | `La lista de empresas no puede estar vacía` |
+| Identificador inexistente | `404` | `Empresa no encontrada con id {id}` |
+
+Todas las respuestas de error comparten el mismo formato:
+
+```json
+{
+  "status": 404,
+  "mensaje": "Empresa no encontrada con id 99",
+  "fecha": "2026-10-28T10:15:30"
+}
+```
 
 ---
 
@@ -236,8 +254,8 @@ El objetivo del proyecto es evolucionar hacia un CRM completo. Funcionalidades p
 |---|---|---|
 | 1 | Gestión de empresas (CRUD, filtros, alta en lote) | Completado |
 | 1 | Filtros dinámicos combinables con JPA Specifications | Completado |
-| 1 | DTOs de entrada y salida | En desarrollo |
-| 1 | Gestión centralizada de errores (`@RestControllerAdvice`) con respuestas 400 / 404 | Pendiente |
+| 1 | DTOs de entrada y salida | Completado |
+| 1 | Gestión centralizada de errores (`@RestControllerAdvice`) con respuestas 400 / 404 | Completado |
 | 1 | Tests automatizados de integración | Pendiente |
 | 2 | Gestión de **contactos** asociados a cada empresa | Pendiente |
 | 2 | Gestión de **oportunidades de venta** y embudo comercial | Pendiente |
@@ -252,5 +270,4 @@ El objetivo del proyecto es evolucionar hacia un CRM completo. Funcionalidades p
 
 ## Limitaciones conocidas
 
-- Los errores de validación y de recurso no encontrado se devuelven actualmente como `500 Internal Server Error`. Se corregirá con la gestión centralizada de errores prevista en la fase 1.
 - La base de datos en memoria no conserva los datos entre reinicios.
