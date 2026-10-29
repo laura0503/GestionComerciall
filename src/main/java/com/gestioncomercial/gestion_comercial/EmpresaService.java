@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import com.gestioncomercial.gestion_comercial.exception.ConflictoException;
 import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
 
 //reglas y comporbaciones
@@ -14,9 +15,14 @@ import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaExcep
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final ContactoRepository contactoRepository;
+    private final OportunidadRepository oportunidadRepository;
 
-    public EmpresaService(EmpresaRepository empresaRepository) {
+    public EmpresaService(EmpresaRepository empresaRepository, ContactoRepository contactoRepository,
+            OportunidadRepository oportunidadRepository) {
         this.empresaRepository = empresaRepository;
+        this.contactoRepository = contactoRepository;
+        this.oportunidadRepository = oportunidadRepository;
     }
 
     public List<EmpresaResponse> listar() {
@@ -71,6 +77,13 @@ public class EmpresaService {
 
     public void borrar(Long id) {
         obtenerEntidad(id); // si no existe, lanza "Empresa no encontrada"
+        // no se borra si tiene datos relacionados: se perderían sin querer → 409
+        if (contactoRepository.existsByEmpresaId(id)) {
+            throw new ConflictoException("No se puede borrar la empresa " + id + " porque tiene contactos");
+        }
+        if (oportunidadRepository.existsByEmpresaId(id)) {
+            throw new ConflictoException("No se puede borrar la empresa " + id + " porque tiene oportunidades");
+        }
         empresaRepository.deleteById(id);
     }
 

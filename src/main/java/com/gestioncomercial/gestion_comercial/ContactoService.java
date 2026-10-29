@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.gestioncomercial.gestion_comercial.dto.ContactoRequest;
 import com.gestioncomercial.gestion_comercial.dto.ContactoResponse;
+import com.gestioncomercial.gestion_comercial.exception.ConflictoException;
 import com.gestioncomercial.gestion_comercial.exception.ContactoNoEncontradoException;
 import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
 
@@ -15,10 +16,13 @@ public class ContactoService {
 
     private final ContactoRepository contactoRepository;
     private final EmpresaRepository empresaRepository;
+    private final OportunidadRepository oportunidadRepository;
 
-    public ContactoService(ContactoRepository contactoRepository, EmpresaRepository empresaRepository) {
+    public ContactoService(ContactoRepository contactoRepository, EmpresaRepository empresaRepository,
+            OportunidadRepository oportunidadRepository) {
         this.contactoRepository = contactoRepository;
         this.empresaRepository = empresaRepository;
+        this.oportunidadRepository = oportunidadRepository;
     }
 
     public List<ContactoResponse> listar() {
@@ -58,6 +62,9 @@ public class ContactoService {
 
     public void borrar(Long id) {
         obtenerContacto(id); // si no existe → 404
+        if (oportunidadRepository.existsByContactoId(id)) {
+            throw new ConflictoException("No se puede borrar el contacto " + id + " porque tiene oportunidades");
+        }
         contactoRepository.deleteById(id);
     }
 

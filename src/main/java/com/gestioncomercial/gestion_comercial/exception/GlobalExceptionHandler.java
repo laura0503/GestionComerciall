@@ -2,6 +2,7 @@ package com.gestioncomercial.gestion_comercial.exception;
 
 import java.time.LocalDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,6 +36,24 @@ public class GlobalExceptionHandler {
     // contacto no existe → 404
     @ExceptionHandler(ContactoNoEncontradoException.class)
     public ResponseEntity<ErrorResponse> contactoNoEncontrado(ContactoNoEncontradoException e) {
+        return construir(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // la operación choca con datos relacionados → 409
+    @ExceptionHandler(ConflictoException.class)
+    public ResponseEntity<ErrorResponse> conflicto(ConflictoException e) {
+        return construir(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    // red de seguridad: la BD rechaza la operación por una clave foránea → 409
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> integridad(DataIntegrityViolationException e) {
+        return construir(HttpStatus.CONFLICT, "La operación no se puede realizar porque hay datos relacionados");
+    }
+
+    // oportunidad no existe → 404
+    @ExceptionHandler(OportunidadNoEncontradaException.class)
+    public ResponseEntity<ErrorResponse> oportunidadNoEncontrada(OportunidadNoEncontradaException e) {
         return construir(HttpStatus.NOT_FOUND, e.getMessage());
     }
     /*
