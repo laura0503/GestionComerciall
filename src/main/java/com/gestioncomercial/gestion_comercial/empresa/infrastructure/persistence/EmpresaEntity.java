@@ -1,18 +1,22 @@
-package com.gestioncomercial.gestion_comercial;
+package com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-@Entity // es una tabla de una base de datos
-public class Empresas {
+// la TABLA de empresas (antes se llamaba Empresas y hacía también de modelo).
+// @Table mantiene el nombre de siempre para no perder los datos de la BD
+@Entity
+@Table(name = "empresas")
+public class EmpresaEntity {
     @Id // clave primaria
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nombre, sector, provincia, estado;
 
-    public Empresas(Long id, String nombre, String sector, String provincia, String estado) {
+    public EmpresaEntity(Long id, String nombre, String sector, String provincia, String estado) {
         this.id = id;
         this.nombre = nombre;
         this.sector = sector;
@@ -20,7 +24,8 @@ public class Empresas {
         this.estado = estado;
     }
 
-    public Empresas() {
+    // JPA necesita un constructor vacío
+    public EmpresaEntity() {
     }
 
     public Long getId() {

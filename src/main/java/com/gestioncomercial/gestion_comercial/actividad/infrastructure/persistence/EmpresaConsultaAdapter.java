@@ -1,17 +1,18 @@
 package com.gestioncomercial.gestion_comercial.actividad.infrastructure.persistence;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
 import org.springframework.stereotype.Component;
 
-import com.gestioncomercial.gestion_comercial.EmpresaRepository;
 import com.gestioncomercial.gestion_comercial.actividad.application.port.out.EmpresaConsultaPort;
 
 // responde a "¿existe la empresa?" usando tu EmpresaRepository de siempre
 @Component
 public class EmpresaConsultaAdapter implements EmpresaConsultaPort {
 
-    private final EmpresaRepository empresaRepository;
+    private final EmpresaJpaRepository empresaRepository;
 
-    public EmpresaConsultaAdapter(EmpresaRepository empresaRepository) {
+    public EmpresaConsultaAdapter(EmpresaJpaRepository empresaRepository) {
         this.empresaRepository = empresaRepository;
     }
 

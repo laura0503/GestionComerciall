@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -8,7 +12,7 @@ import org.springframework.stereotype.Service;
 import com.gestioncomercial.gestion_comercial.dto.OportunidadRequest;
 import com.gestioncomercial.gestion_comercial.dto.OportunidadResponse;
 import com.gestioncomercial.gestion_comercial.exception.ContactoNoEncontradoException;
-import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
 import com.gestioncomercial.gestion_comercial.exception.OportunidadNoEncontradaException;
 
 // reglas y comprobaciones de oportunidades de venta
@@ -16,10 +20,10 @@ import com.gestioncomercial.gestion_comercial.exception.OportunidadNoEncontradaE
 public class OportunidadService {
 
     private final OportunidadRepository oportunidadRepository;
-    private final EmpresaRepository empresaRepository;
+    private final EmpresaJpaRepository empresaRepository;
     private final ContactoRepository contactoRepository;
 
-    public OportunidadService(OportunidadRepository oportunidadRepository, EmpresaRepository empresaRepository,
+    public OportunidadService(OportunidadRepository oportunidadRepository, EmpresaJpaRepository empresaRepository,
             ContactoRepository contactoRepository) {
         this.oportunidadRepository = oportunidadRepository;
         this.empresaRepository = empresaRepository;
@@ -45,7 +49,7 @@ public class OportunidadService {
 
     public OportunidadResponse crear(OportunidadRequest request) {
         validarOportunidad(request);
-        Empresas empresa = obtenerEmpresa(request.empresaId());
+        EmpresaEntity empresa = obtenerEmpresa(request.empresaId());
         Contacto contacto = obtenerContactoDeEmpresa(request.contactoId(), empresa);
 
         Oportunidad oportunidad = request.aEntidad(empresa, contacto);
@@ -58,7 +62,7 @@ public class OportunidadService {
     public OportunidadResponse actualizar(Long id, OportunidadRequest datos) {
         validarOportunidad(datos);
         Oportunidad existente = obtenerOportunidad(id);
-        Empresas empresa = obtenerEmpresa(datos.empresaId());
+        EmpresaEntity empresa = obtenerEmpresa(datos.empresaId());
         Contacto contacto = obtenerContactoDeEmpresa(datos.contactoId(), empresa);
 
         existente.setTitulo(datos.titulo());
@@ -95,13 +99,13 @@ public class OportunidadService {
     }
 
     // busca la empresa en la BD o lanza 404
-    private Empresas obtenerEmpresa(Long empresaId) {
+    private EmpresaEntity obtenerEmpresa(Long empresaId) {
         return empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new EmpresaNoEncontradaException(empresaId));
     }
 
     // el contacto es opcional; si viene, tiene que existir y ser de la misma empresa
-    private Contacto obtenerContactoDeEmpresa(Long contactoId, Empresas empresa) {
+    private Contacto obtenerContactoDeEmpresa(Long contactoId, EmpresaEntity empresa) {
         if (contactoId == null) {
             return null;
         }

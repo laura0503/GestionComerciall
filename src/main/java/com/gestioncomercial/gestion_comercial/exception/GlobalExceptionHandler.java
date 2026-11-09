@@ -1,5 +1,7 @@
 package com.gestioncomercial.gestion_comercial.exception;
 
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
+
 import java.time.LocalDateTime;
 
 import org.springframework.dao.DataIntegrityViolationException;

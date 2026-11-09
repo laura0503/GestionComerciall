@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,7 +32,7 @@ class OportunidadServiceTest {
     private OportunidadRepository oportunidadRepository;
 
     @Mock
-    private EmpresaRepository empresaRepository;
+    private EmpresaJpaRepository empresaRepository;
 
     @Mock
     private ContactoRepository contactoRepository;
@@ -37,12 +41,12 @@ class OportunidadServiceTest {
     private OportunidadService oportunidadService;
 
     // datos de prueba: dos empresas distintas y una oportunidad
-    private Empresas acme() {
-        return new Empresas(1L, "Acme", "Tecnología", "Madrid", "Cliente");
+    private EmpresaEntity acme() {
+        return new EmpresaEntity(1L, "Acme", "Tecnología", "Madrid", "Cliente");
     }
 
-    private Empresas barPepe() {
-        return new Empresas(2L, "Bar Pepe", "Hostelería", "Sevilla", "Potencial");
+    private EmpresaEntity barPepe() {
+        return new EmpresaEntity(2L, "Bar Pepe", "Hostelería", "Sevilla", "Potencial");
     }
 
     // recibe la fase, así cada test crea la oportunidad en la fase que necesita

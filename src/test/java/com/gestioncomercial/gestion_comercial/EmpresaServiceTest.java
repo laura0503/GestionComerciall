@@ -18,84 +18,82 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.gestioncomercial.gestion_comercial.dto.EmpresaRequest;
-import com.gestioncomercial.gestion_comercial.dto.EmpresaResponse;
+import com.gestioncomercial.gestion_comercial.empresa.application.port.in.DatosEmpresa;
+import com.gestioncomercial.gestion_comercial.empresa.application.port.out.DatosRelacionadosPort;
+import com.gestioncomercial.gestion_comercial.empresa.application.port.out.EmpresaRepositoryPort;
+import com.gestioncomercial.gestion_comercial.empresa.application.service.EmpresaService;
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.empresa.domain.model.Empresa;
 import com.gestioncomercial.gestion_comercial.exception.ConflictoException;
-import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
 
+// los mismos 7 casos de antes, pero ahora se mockean los PUERTOS (interfaces), no los repositorios JPA
 @ExtendWith(MockitoExtension.class)
 class EmpresaServiceTest {
     @Mock
-    private EmpresaRepository empresaRepository;
+    private EmpresaRepositoryPort empresaRepository;
 
     @Mock
-    private ContactoRepository contactoRepository;
-
-    @Mock
-    private OportunidadRepository oportunidadRepository;
+    private DatosRelacionadosPort datosRelacionados;
 
     @InjectMocks
     private EmpresaService empresaService;
 
-    private EmpresaRequest acEmpresaRequest() {
-        return new EmpresaRequest("Acme", "Tecnología", "Madrid", "Cliente");
-
+    private DatosEmpresa datosAcme() {
+        return new DatosEmpresa("Acme", "Tecnología", "Madrid", "Cliente");
     }
 
-    private Empresas acme() {
-        return new Empresas(1L, "Acme", "Tecnología", "Madrid", "Cliente");
+    private Empresa acme() {
+        return new Empresa(1L, "Acme", "Tecnología", "Madrid", "Cliente");
     }
 
     @Test
-    @DisplayName("Crear una empresa correcta la guarda y deveuel el DTO")
+    @DisplayName("Crear una empresa correcta la guarda y la devuelve con id")
     void crearEmpresaCorrecta() {
-        when(empresaRepository.save(any(Empresas.class))).thenAnswer(invocacion -> {
-            Empresas empresa = invocacion.getArgument(0);
-            empresa.setId(1L);
-            return empresa;
-
+        // la "BD" devuelve la empresa con id 1 (Empresa no tiene setId: se crea otra con el id)
+        when(empresaRepository.guardar(any(Empresa.class))).thenAnswer(invocacion -> {
+            Empresa e = invocacion.getArgument(0);
+            return new Empresa(1L, e.getNombre(), e.getSector(), e.getProvincia(), e.getEstado());
         });
 
-        EmpresaResponse respuesta = empresaService.crear(acEmpresaRequest());
+        Empresa resultado = empresaService.crear(datosAcme());
 
-        assertEquals(1L, respuesta.id());
-        assertEquals("Acme", respuesta.nombre());
-        assertEquals("Madrid", respuesta.provincia());
+        assertEquals(1L, resultado.getId());
+        assertEquals("Acme", resultado.getNombre());
+        assertEquals("Madrid", resultado.getProvincia());
     }
 
     @Test
-    @DisplayName("Crear una empresa sin secto lanza 400 y no guarda")
+    @DisplayName("Crear una empresa sin sector lanza 400 y no guarda")
     void crearSinSector() {
-        EmpresaRequest request = new EmpresaRequest("Acme", "", "Madrid", "Cliente");
+        DatosEmpresa datos = new DatosEmpresa("Acme", "", "Madrid", "Cliente");
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> empresaService.crear(request));
+                () -> empresaService.crear(datos));
         assertEquals("El sector de la empresa es obligatorio", error.getMessage());
-        verify(empresaRepository, never()).save(any());
-        // any, para culquier lista
+        verify(empresaRepository, never()).guardar(any());
     }
 
     @Test
     @DisplayName("Crear un lote vacío lanza 400")
     void crearLoteVacio() {
         assertThrows(IllegalArgumentException.class, () -> empresaService.crearLote(List.of()));
-        verify(empresaRepository, never()).saveAll(anyList());
+        verify(empresaRepository, never()).guardarTodas(anyList());
     }
 
     @Test
     @DisplayName("Si una empresa del lote no es válida, no se guarda ninguna")
     void crearLoteConUnaInvalida() {
-        EmpresaRequest sinNombre = new EmpresaRequest("", "Hostelería", "Sevilla", "Potencial");
-        List<EmpresaRequest> lote = List.of(acEmpresaRequest(), sinNombre); // la segunda está mal
+        DatosEmpresa sinNombre = new DatosEmpresa("", "Hostelería", "Sevilla", "Potencial");
+        List<DatosEmpresa> lote = List.of(datosAcme(), sinNombre); // la segunda está mal
 
         assertThrows(IllegalArgumentException.class, () -> empresaService.crearLote(lote));
-        verify(empresaRepository, never()).saveAll(anyList()); // ni siquiera la primera
+        verify(empresaRepository, never()).guardarTodas(anyList()); // ni siquiera la primera
     }
 
     @Test
     @DisplayName("Buscar una empresa que no existe lanza 404")
     void buscarPorIdInexistente() {
-        when(empresaRepository.findById(99L)).thenReturn(Optional.empty());
+        when(empresaRepository.buscarPorId(99L)).thenReturn(Optional.empty());
 
         assertThrows(EmpresaNoEncontradaException.class, () -> empresaService.buscarPorId(99L));
     }
@@ -103,27 +101,22 @@ class EmpresaServiceTest {
     @Test
     @DisplayName("Borrar una empresa con contactos lanza 409 y no la borra")
     void borrarConContactos() {
-        when(empresaRepository.findById(1L)).thenReturn(Optional.of(acme()));
-        when(contactoRepository.existsByEmpresaId(1L)).thenReturn(true);
+        when(empresaRepository.buscarPorId(1L)).thenReturn(Optional.of(acme()));
+        when(datosRelacionados.tieneContactos(1L)).thenReturn(true);
 
         assertThrows(ConflictoException.class, () -> empresaService.borrar(1L));
-        verify(empresaRepository, never()).deleteById(any());
+        verify(empresaRepository, never()).borrar(any());
     }
 
     @Test
     @DisplayName("Borrar una empresa sin contactos ni oportunidades la borra")
     void borrarSinDatosRelacionados() {
-        when(empresaRepository.findById(1L)).thenReturn(Optional.of(acme()));
-        when(contactoRepository.existsByEmpresaId(1L)).thenReturn(false);
-        when(oportunidadRepository.existsByEmpresaId(1L)).thenReturn(false);
+        when(empresaRepository.buscarPorId(1L)).thenReturn(Optional.of(acme()));
+        when(datosRelacionados.tieneContactos(1L)).thenReturn(false);
+        when(datosRelacionados.tieneOportunidades(1L)).thenReturn(false);
 
         empresaService.borrar(1L);
 
-        verify(empresaRepository).deleteById(1L);
+        verify(empresaRepository).borrar(1L);
     }
-
-    /*
-     * acmeRequest() y acme() Uno crea el DTO (lo que envía el cliente) y otro la
-     * entidad (lo que hay en la BD). Así no repites datos en cada test
-     */
 }

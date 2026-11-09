@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.gestioncomercial.gestion_comercial.dto.ContactoRequest;
 import com.gestioncomercial.gestion_comercial.dto.ContactoResponse;
 import com.gestioncomercial.gestion_comercial.exception.ConflictoException;
-import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
 
 // tests unitarios de ContactoService: los repositorios son falsos (mocks)
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +33,7 @@ class ContactoServiceTest {
     private ContactoRepository contactoRepository;
 
     @Mock
-    private EmpresaRepository empresaRepository;
+    private EmpresaJpaRepository empresaRepository;
 
     @Mock
     private OportunidadRepository oportunidadRepository;
@@ -38,8 +42,8 @@ class ContactoServiceTest {
     private ContactoService contactoService; // el de verdad, con los mocks dentro
 
     // empresa de prueba que usan varios tests
-    private Empresas acme() {
-        return new Empresas(1L, "Acme", "Tecnología", "Madrid", "Cliente");
+    private EmpresaEntity acme() {
+        return new EmpresaEntity(1L, "Acme", "Tecnología", "Madrid", "Cliente");
     }
 
     @Test

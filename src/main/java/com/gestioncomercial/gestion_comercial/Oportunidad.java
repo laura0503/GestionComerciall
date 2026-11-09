@@ -1,5 +1,7 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -30,14 +32,14 @@ public class Oportunidad {
 
     @ManyToOne // muchas oportunidades pertenecen a una empresa
     @JoinColumn(name = "empresa_id", nullable = false) // clave foránea obligatoria
-    private Empresas empresa;
+    private EmpresaEntity empresa;
 
     @ManyToOne // contacto principal de la oportunidad
     @JoinColumn(name = "contacto_id") // opcional: puede ser null
     private Contacto contacto;
 
     public Oportunidad(Long id, String titulo, BigDecimal importe, Fase fase, LocalDate fechaCierrePrevista,
-            Empresas empresa, Contacto contacto) {
+            EmpresaEntity empresa, Contacto contacto) {
         this.id = id;
         this.titulo = titulo;
         this.importe = importe;
@@ -90,11 +92,11 @@ public class Oportunidad {
         this.fechaCierrePrevista = fechaCierrePrevista;
     }
 
-    public Empresas getEmpresa() {
+    public EmpresaEntity getEmpresa() {
         return empresa;
     }
 
-    public void setEmpresa(Empresas empresa) {
+    public void setEmpresa(EmpresaEntity empresa) {
         this.empresa = empresa;
     }
 

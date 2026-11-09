@@ -1,4 +1,4 @@
-package com.gestioncomercial.gestion_comercial;
+package com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -6,7 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 //query	--> la consulta entera (el SELECT ... FROM ... WHERE ... ORDER BY); aquí no se usa
 //cb	Una comparación	--> es la fábrica que crea las comparaciones
 public class EmpresaSpecifications {
-    public static Specification<Empresas> nombreContiene(String nombre) {
+    public static Specification<EmpresaEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction(); // condición siempre verdadera: no filtra
@@ -18,7 +18,7 @@ public class EmpresaSpecifications {
     }
 
     // WHERE sector = ?
-    public static Specification<Empresas> conSector(String sector) {
+    public static Specification<EmpresaEntity> conSector(String sector) {
         return (root, query, cb) -> {
             if (sector == null || sector.isBlank()) {
                 return cb.conjunction();
@@ -30,7 +30,7 @@ public class EmpresaSpecifications {
 
     // WHERE provincia = ?
 
-    public static Specification<Empresas> conProvincia(String provincia) {
+    public static Specification<EmpresaEntity> conProvincia(String provincia) {
         return (root, query, cb) -> {
             if (provincia == null || provincia.isBlank()) {
                 return cb.conjunction();
@@ -40,7 +40,7 @@ public class EmpresaSpecifications {
     }
 
     // WHERE estado = ?
-    public static Specification<Empresas> conEstado(String estado) {
+    public static Specification<EmpresaEntity> conEstado(String estado) {
         return (root, query, cb) -> { // esto hace que JPA se cinvierta en SQL
             if (estado == null || estado.isBlank()) {
                 return cb.conjunction();

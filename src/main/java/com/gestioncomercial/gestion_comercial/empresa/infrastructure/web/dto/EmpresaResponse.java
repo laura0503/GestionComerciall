@@ -1,12 +1,12 @@
-package com.gestioncomercial.gestion_comercial.dto;
+package com.gestioncomercial.gestion_comercial.empresa.infrastructure.web.dto;
 
-import com.gestioncomercial.gestion_comercial.Empresas;
+import com.gestioncomercial.gestion_comercial.empresa.domain.model.Empresa;
 
 // datos que devuelve la API al cliente
 public record EmpresaResponse(Long id, String nombre, String sector, String provincia, String estado) {
 
-    // convierte la entidad de la BD en el DTO que se envía
-    public static EmpresaResponse desde(Empresas empresa) {
+    // dominio → DTO
+    public static EmpresaResponse desde(Empresa empresa) {
         return new EmpresaResponse(
                 empresa.getId(),
                 empresa.getNombre(),

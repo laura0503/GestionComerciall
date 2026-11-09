@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -8,17 +12,17 @@ import com.gestioncomercial.gestion_comercial.dto.ContactoRequest;
 import com.gestioncomercial.gestion_comercial.dto.ContactoResponse;
 import com.gestioncomercial.gestion_comercial.exception.ConflictoException;
 import com.gestioncomercial.gestion_comercial.exception.ContactoNoEncontradoException;
-import com.gestioncomercial.gestion_comercial.exception.EmpresaNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
 
 // reglas y comprobaciones de contactos
 @Service
 public class ContactoService {
 
     private final ContactoRepository contactoRepository;
-    private final EmpresaRepository empresaRepository;
+    private final EmpresaJpaRepository empresaRepository;
     private final OportunidadRepository oportunidadRepository;
 
-    public ContactoService(ContactoRepository contactoRepository, EmpresaRepository empresaRepository,
+    public ContactoService(ContactoRepository contactoRepository, EmpresaJpaRepository empresaRepository,
             OportunidadRepository oportunidadRepository) {
         this.contactoRepository = contactoRepository;
         this.empresaRepository = empresaRepository;
@@ -40,7 +44,7 @@ public class ContactoService {
 
     public ContactoResponse crear(ContactoRequest request) {
         validarContacto(request);
-        Empresas empresa = obtenerEmpresa(request.empresaId());
+        EmpresaEntity empresa = obtenerEmpresa(request.empresaId());
         Contacto guardado = contactoRepository.save(request.aEntidad(empresa));
         return ContactoResponse.desde(guardado);
     }
@@ -48,7 +52,7 @@ public class ContactoService {
     public ContactoResponse actualizar(Long id, ContactoRequest datos) {
         validarContacto(datos);
         Contacto existente = obtenerContacto(id);
-        Empresas empresa = obtenerEmpresa(datos.empresaId());
+        EmpresaEntity empresa = obtenerEmpresa(datos.empresaId());
 
         existente.setNombre(datos.nombre());
         existente.setApellidos(datos.apellidos());
@@ -75,7 +79,7 @@ public class ContactoService {
     }
 
     // busca la empresa en la BD o lanza 404
-    private Empresas obtenerEmpresa(Long empresaId) {
+    private EmpresaEntity obtenerEmpresa(Long empresaId) {
         return empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new EmpresaNoEncontradaException(empresaId));
     }

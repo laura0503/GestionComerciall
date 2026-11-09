@@ -1,5 +1,7 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,10 +18,10 @@ public class Contacto {
 
     @ManyToOne
     @JoinColumn(name = "empresas_id", nullable = false) // clave foránea
-    private Empresas empresa;
+    private EmpresaEntity empresa;
 
     public Contacto(Long id, String nombre, String apellidos, String cargo, String email, String telefono,
-            Empresas empresa) {
+            EmpresaEntity empresa) {
         this.id = id;
         this.nombre = nombre;
         this.apellidos = apellidos;
@@ -81,11 +83,11 @@ public class Contacto {
         this.telefono = telefono;
     }
 
-    public Empresas getEmpresa() {
+    public EmpresaEntity getEmpresa() {
         return empresa;
     }
 
-    public void setEmpresa(Empresas empresa) {
+    public void setEmpresa(EmpresaEntity empresa) {
         this.empresa = empresa;
     }
 }

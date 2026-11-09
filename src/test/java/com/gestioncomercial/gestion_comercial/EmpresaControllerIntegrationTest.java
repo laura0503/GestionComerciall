@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,14 +30,14 @@ class EmpresaControllerIntegrationTest {
     private MockMvc mockMvc; // el postman de los test
 
     @Autowired
-    private EmpresaRepository empresaRepository;
+    private EmpresaJpaRepository empresaRepository;
 
     @Autowired
     private ContactoRepository contactoRepository;
 
     // guarda una empresa directamente en la BD de test
-    private Empresas guardarEmpresa(String nombre, String provincia) {
-        return empresaRepository.save(new Empresas(null, nombre, "Tecnología", provincia, "Cliente"));
+    private EmpresaEntity guardarEmpresa(String nombre, String provincia) {
+        return empresaRepository.save(new EmpresaEntity(null, nombre, "Tecnología", provincia, "Cliente"));
     }
 
     @Test
@@ -86,7 +90,7 @@ class EmpresaControllerIntegrationTest {
     @Test
     @DisplayName("DELETE de una empresa con contactos responde 409")
     void borrarConContactos() throws Exception {
-        Empresas acme = guardarEmpresa("Acme", "Madrid");
+        EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
         contactoRepository.save(new Contacto(null, "Ana", null, null, null, null, acme));
 
         mockMvc.perform(delete("/api/empresas/" + acme.getId()))
@@ -98,7 +102,7 @@ class EmpresaControllerIntegrationTest {
     @Test
     @DisplayName("DELETE de una empresa sin datos relacionados responde 204 y deja de existir")
     void borrarSinRelacionados() throws Exception {
-        Empresas acme = guardarEmpresa("Acme", "Madrid");
+        EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
 
         mockMvc.perform(delete("/api/empresas/" + acme.getId()))
                 .andExpect(status().isNoContent());
