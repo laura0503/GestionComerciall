@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.gestioncomercial.gestion_comercial.actividad.domain.exception.ActividadNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.actividad.domain.exception.ActividadYaCompletadaException;
+
 // captura los errores de todos los controladores y decide el código HTTP
 @RestControllerAdvice // --> Hace que la clase "vigile" todos los @RestController. Cuando cualquiera
                       // lanza un error que no captura, Spring mira aquí antes de responder 500
@@ -65,4 +68,16 @@ public class GlobalExceptionHandler {
      * .body(error)
      * Pone el JSON
      */
+
+    // actividad no existe → 404
+    @ExceptionHandler(ActividadNoEncontradaException.class)
+    public ResponseEntity<ErrorResponse> actividadNoEncontrada(ActividadNoEncontradaException e) {
+        return construir(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // completar una actividad ya completada → 409
+    @ExceptionHandler(ActividadYaCompletadaException.class)
+    public ResponseEntity<ErrorResponse> actividadYaCompletada(ActividadYaCompletadaException e) {
+        return construir(HttpStatus.CONFLICT, e.getMessage());
+    }
 }
