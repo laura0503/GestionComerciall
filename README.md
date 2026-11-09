@@ -1,8 +1,8 @@
 # Gestión Comercial — CRM
 
-Backend de un **CRM (Customer Relationship Management)** desarrollado con **Spring Boot**, orientado a la gestión de la cartera comercial de una empresa: clientes y potenciales clientes, sus personas de contacto y las oportunidades de venta abiertas con cada uno.
+Backend de un **CRM (Customer Relationship Management)** desarrollado con **Spring Boot** y **arquitectura hexagonal**, orientado a la gestión de la cartera comercial de una empresa: clientes y potenciales clientes, sus personas de contacto, las oportunidades de venta abiertas con cada uno y las actividades comerciales (llamadas, reuniones, correos y tareas).
 
-La versión actual implementa tres módulos relacionados entre sí: **Empresas**, **Contactos** y **Oportunidades de venta**.
+La versión actual implementa cuatro módulos relacionados entre sí: **Empresas**, **Contactos**, **Oportunidades de venta** y **Actividades**.
 
 > **Estado:** en desarrollo activo. Consulta la [hoja de ruta](#hoja-de-ruta) para ver las funcionalidades previstas.
 
@@ -12,7 +12,7 @@ La versión actual implementa tres módulos relacionados entre sí: **Empresas**
 
 - [Stack tecnológico](#stack-tecnológico)
 - [Puesta en marcha](#puesta-en-marcha)
-- [Arquitectura](#arquitectura)
+- [Arquitectura hexagonal](#arquitectura-hexagonal)
 - [Modelo de datos](#modelo-de-datos)
 - [API REST](#api-rest)
 - [Reglas de validación y errores](#reglas-de-validación-y-errores)
@@ -27,12 +27,14 @@ La versión actual implementa tres módulos relacionados entre sí: **Empresas**
 | Tecnología | Versión | Uso |
 |---|---|---|
 | Java | 25 | Lenguaje de desarrollo |
-| Spring Boot | 4.1.2 | Framework principal |
+| Spring Boot | 4.1.2 | Framework principal (solo en la capa de infraestructura) |
 | Spring Web MVC | — | Exposición de la API REST |
-| Spring Data JPA | — | Capa de persistencia y consultas |
+| Spring Data JPA | — | Persistencia y consultas (adaptadores de salida) |
 | H2 Database | — | Base de datos embebida en archivo para desarrollo |
+| springdoc-openapi | 3.1.1 | Documentación interactiva de la API (Swagger UI) |
+| JUnit 5 + Mockito | — | Tests unitarios |
+| MockMvc | — | Tests de integración de la API |
 | Lombok | — | Reducción de código repetitivo |
-| Spring DevTools | — | Recarga automática en desarrollo |
 | Maven | — | Gestión de dependencias y construcción |
 
 ---
@@ -56,11 +58,20 @@ La versión actual implementa tres módulos relacionados entre sí: **Empresas**
 
 La API queda disponible en `http://localhost:8080`.
 
+### Documentación interactiva (Swagger)
+
+Con la aplicación arrancada, la documentación de todos los endpoints está en:
+
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+- **Especificación OpenAPI (JSON):** `http://localhost:8080/v3/api-docs`
+
+Desde Swagger UI se pueden probar las peticiones directamente desde el navegador.
+
 ### Base de datos
 
 H2 guarda los datos en el archivo `data/gestiondb.mv.db`, de modo que **se conservan entre reinicios**. El esquema se crea y actualiza automáticamente al arrancar (`spring.jpa.hibernate.ddl-auto=update`).
 
-Para empezar con la base de datos vacía, detén la aplicación y elimina la carpeta `data/` (está excluida del control de versiones).
+Para empezar con la base de datos vacía, detén la aplicación y elimina la carpeta `data/` (está excluida del control de versiones). Los tests usan una base de datos en memoria independiente, por lo que nunca modifican estos datos.
 
 **Consola H2:**
 
@@ -73,60 +84,87 @@ Para empezar con la base de datos vacía, detén la aplicación y elimina la car
 
 ---
 
-## Arquitectura
+## Arquitectura hexagonal
 
-El proyecto sigue una **arquitectura en capas**, separando la exposición HTTP, la lógica de negocio y el acceso a datos:
+El proyecto sigue una **arquitectura hexagonal (puertos y adaptadores)**. La lógica de negocio vive en un **núcleo de Java puro**, sin dependencias de Spring ni de JPA, y se comunica con el exterior a través de **puertos** (interfaces) que implementan los **adaptadores**.
 
 ```
-Cliente HTTP
-     │  JSON (DTOs)
-     ▼
-Controller   → Expone los endpoints REST y gestiona las respuestas HTTP
-     │
-     ▼
-Service      → Validaciones, reglas de negocio y conversión DTO ⇄ entidad
-     │
-     ▼
-Repository   → Acceso a datos mediante Spring Data JPA
-     │  Entidades
-     ▼
-Base de datos
+                  ┌───────────────────── infraestructura ─────────────────────┐
+                  │                                                           │
+ Cliente HTTP ──► │  Controller + DTOs           Adaptadores JPA ──► Base de  │
+   (JSON)         │  (adaptador de entrada)      (adaptadores de      datos   │
+                  │        │                      salida)                     │
+                  │        ▼                         ▲                        │
+                  │  ┌──────────────────── núcleo ───┼──────────────┐         │
+                  │  │  puertos in ──► Service ──► puertos out      │         │
+                  │  │  (casos de uso)    │                         │         │
+                  │  │                    ▼                         │         │
+                  │  │               Modelo de dominio              │         │
+                  │  │           (datos + reglas de negocio)        │         │
+                  │  └──────────────────────────────────────────────┘         │
+                  └───────────────────────────────────────────────────────────┘
 ```
 
-La API nunca expone las entidades JPA: cada servicio recibe un `*Request`, opera con la entidad y devuelve un `*Response`.
+**Todas las dependencias apuntan hacia dentro:** la infraestructura conoce el núcleo, pero el núcleo no conoce la infraestructura. Así, cambiar la base de datos o el framework web solo afecta a los adaptadores.
 
-### Componentes
+### Estructura de paquetes
 
-| Módulo | Entidad | Repositorio | Servicio | Controlador | DTOs |
-|---|---|---|---|---|---|
-| Empresas | [Empresas](src/main/java/com/gestioncomercial/gestion_comercial/Empresas.java) | [EmpresaRepository](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaRepository.java) | [EmpresaService](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaService.java) | [EmpresaController](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaController.java) | [Request](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaRequest.java) / [Response](src/main/java/com/gestioncomercial/gestion_comercial/dto/EmpresaResponse.java) |
-| Contactos | [Contacto](src/main/java/com/gestioncomercial/gestion_comercial/Contacto.java) | [ContactoRepository](src/main/java/com/gestioncomercial/gestion_comercial/ContactoRepository.java) | [ContactoService](src/main/java/com/gestioncomercial/gestion_comercial/ContactoService.java) | [ContactoController](src/main/java/com/gestioncomercial/gestion_comercial/ContactoController.java) | [Request](src/main/java/com/gestioncomercial/gestion_comercial/dto/ContactoRequest.java) / [Response](src/main/java/com/gestioncomercial/gestion_comercial/dto/ContactoResponse.java) |
-| Oportunidades | [Oportunidad](src/main/java/com/gestioncomercial/gestion_comercial/Oportunidad.java) | [OportunidadRepository](src/main/java/com/gestioncomercial/gestion_comercial/OportunidadRepository.java) | [OportunidadService](src/main/java/com/gestioncomercial/gestion_comercial/OportunidadService.java) | [OportunidadController](src/main/java/com/gestioncomercial/gestion_comercial/OportunidadController.java) | [Request](src/main/java/com/gestioncomercial/gestion_comercial/dto/OportunidadRequest.java) / [Response](src/main/java/com/gestioncomercial/gestion_comercial/dto/OportunidadResponse.java) / [CambioFase](src/main/java/com/gestioncomercial/gestion_comercial/dto/CambioFaseRequest.java) |
+Cada módulo es independiente y tiene la misma estructura:
 
-Otros componentes:
+```
+com.gestioncomercial.gestion_comercial
+├── empresa/
+│   ├── domain/
+│   │   ├── model/          Empresa (modelo con sus reglas de negocio)
+│   │   └── exception/      Excepciones de negocio
+│   ├── application/
+│   │   ├── port/in/        Casos de uso (lo que se le puede pedir al módulo)
+│   │   ├── port/out/       Lo que el módulo necesita del exterior
+│   │   └── service/        Implementación de los casos de uso (sin Spring)
+│   └── infrastructure/
+│       ├── web/            Controller REST + DTOs (adaptador de entrada)
+│       ├── persistence/    Entidad JPA, repositorio, mapper y adaptadores de salida
+│       └── config/         Registro del servicio como bean de Spring
+├── contacto/               (misma estructura)
+├── oportunidad/            (misma estructura)
+├── actividad/              (misma estructura)
+├── exception/              Gestión común de errores (GlobalExceptionHandler)
+└── config/                 Configuración común (OpenAPI)
+```
 
-| Componente | Responsabilidad |
-|---|---|
-| [EmpresaSpecifications](src/main/java/com/gestioncomercial/gestion_comercial/EmpresaSpecifications.java) | Filtros dinámicos combinables de empresas (JPA Specifications) |
-| [Fase](src/main/java/com/gestioncomercial/gestion_comercial/Fase.java) | Enumeración con las fases del embudo de ventas |
-| [GlobalExceptionHandler](src/main/java/com/gestioncomercial/gestion_comercial/exception/GlobalExceptionHandler.java) | Traduce las excepciones a respuestas `400` / `404` / `409` (`@RestControllerAdvice`) |
-| [ErrorResponse](src/main/java/com/gestioncomercial/gestion_comercial/exception/ErrorResponse.java) | Formato JSON común de las respuestas de error |
-| `*NoEncontrad*Exception` | Una excepción por módulo para recursos inexistentes (`404`) |
-| [ConflictoException](src/main/java/com/gestioncomercial/gestion_comercial/exception/ConflictoException.java) | Operaciones bloqueadas por datos relacionados (`409`) |
+### Responsabilidades
+
+| Capa | Pieza | Responsabilidad |
+|---|---|---|
+| **Dominio** | `Empresa`, `Contacto`, `Oportunidad`, `Actividad` | Datos y reglas de negocio. Se crean con métodos de fábrica (`nueva()`) que validan, y solo cambian a través de métodos que aplican las reglas (`actualizar()`, `cambiarFase()`, `completar()`) |
+| **Aplicación** | Puertos `in` (`CrearEmpresaUseCase`, `CambiarFaseUseCase`…) | Contratos de entrada: una interfaz por acción de negocio |
+| | Puertos `out` (`EmpresaRepositoryPort`, `DatosRelacionadosPort`…) | Contratos de salida: lo que el núcleo necesita, sin saber cómo se obtiene |
+| | `*Service` | Coordina el dominio y los puertos. No lleva anotaciones de Spring |
+| **Infraestructura** | `*Controller` + DTOs | Traduce HTTP/JSON ⇄ casos de uso |
+| | `*Entity`, `*JpaRepository`, `*Mapper` | Representación en tablas y conversión dominio ⇄ entidad |
+| | `*JpaAdapter` y demás adaptadores | Implementan los puertos de salida con Spring Data JPA |
+| | `*Config` | Crea cada servicio con sus adaptadores (`@Bean`) |
+
+### Decisiones de diseño
+
+- **Relaciones por identificador en el dominio.** El modelo de dominio guarda solo el `id` de las entidades relacionadas (`empresaId`, `contactoId`). Las relaciones `@ManyToOne` existen únicamente en las entidades JPA, de modo que la base de datos conserva sus claves foráneas sin acoplar los módulos entre sí.
+- **Módulos desacoplados.** Cuando un módulo necesita información de otro, lo pide a través de un puerto propio y mínimo (por ejemplo, `EmpresaDeContactoPort.buscarNombre()` o `ContactoResumen` en oportunidades), nunca usando directamente el dominio del otro módulo.
+- **La API nunca expone el dominio ni las entidades JPA.** Los controladores reciben un `*Request` y devuelven un `*Response`.
 
 ---
 
 ## Modelo de datos
 
 ```
-EMPRESAS 1 ──── * CONTACTO
-    1                 1
-    │                 │ (opcional)
-    *                 *
-    └──── OPORTUNIDAD ┘
+               ┌──────────── * ACTIVIDAD
+               │
+EMPRESAS 1 ────┼──────────── * CONTACTO
+               │                   1
+               │                   │ (opcional)
+               └──── * OPORTUNIDAD *
 ```
 
-- Una **empresa** tiene muchos **contactos** y muchas **oportunidades**.
+- Una **empresa** tiene muchos **contactos**, **oportunidades** y **actividades**.
 - Cada **oportunidad** pertenece a una empresa y puede tener un **contacto principal**, que debe ser de esa misma empresa.
 
 En todos los módulos, el `id` lo asigna la base de datos: si el cliente lo incluye en el cuerpo de un `POST` o `PUT`, se ignora.
@@ -199,9 +237,32 @@ La respuesta incluye además `empresaNombre` y `contactoNombre`:
 | `GANADA` | Venta cerrada |
 | `PERDIDA` | Venta descartada |
 
+### Actividad
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `id` | `Long` | Autogenerado | Identificador único |
+| `tipo` | `TipoActividad` | Sí | `LLAMADA`, `REUNION`, `EMAIL` o `TAREA` |
+| `asunto` | `String` | Sí | Descripción breve |
+| `descripcion` | `String` | No | Detalle de la actividad |
+| `fecha` | `LocalDateTime` | Sí | Formato `AAAA-MM-DDTHH:MM:SS` |
+| `completada` | `boolean` | Automático | Siempre empieza en `false`; cambia con `PATCH …/completar` |
+| `empresaId` | `Long` | Sí | Empresa con la que se realiza |
+
+```json
+{
+  "id": 1, "tipo": "LLAMADA", "asunto": "Llamar para cerrar el presupuesto", "descripcion": null,
+  "fecha": "2026-11-20T10:00:00", "completada": false, "empresaId": 1
+}
+```
+
+Una actividad está **vencida** si no está completada y su fecha ya ha pasado.
+
 ---
 
 ## API REST
+
+La documentación completa e interactiva está disponible en [Swagger UI](#documentación-interactiva-swagger).
 
 ### Empresas
 
@@ -215,7 +276,7 @@ La respuesta incluye además `empresaNombre` y `contactoNombre`:
 | `POST` | `/api/empresas` | Registrar una empresa | `201` |
 | `POST` | `/api/empresas/lote` | Registrar varias empresas en una única operación | `201` |
 | `PUT` | `/api/empresas/{id}` | Actualizar una empresa | `200` |
-| `DELETE` | `/api/empresas/{id}` | Eliminar una empresa (sin contactos ni oportunidades) | `204` |
+| `DELETE` | `/api/empresas/{id}` | Eliminar una empresa (sin contactos, oportunidades ni actividades) | `204` |
 
 ### Contactos
 
@@ -240,6 +301,17 @@ La respuesta incluye además `empresaNombre` y `contactoNombre`:
 | `PATCH` | `/api/oportunidades/{id}/fase` | Mover la oportunidad a otra fase | `200` |
 | `DELETE` | `/api/oportunidades/{id}` | Eliminar una oportunidad | `204` |
 
+### Actividades
+
+| Método | Endpoint | Descripción | Respuesta |
+|---|---|---|---|
+| `GET` | `/api/actividades/{id}` | Obtener una actividad | `200` |
+| `GET` | `/api/actividades/vencidas` | Actividades pendientes cuya fecha ya ha pasado | `200` |
+| `GET` | `/api/empresas/{empresaId}/actividades` | Actividades de una empresa | `200` |
+| `POST` | `/api/actividades` | Registrar una actividad | `201` |
+| `PATCH` | `/api/actividades/{id}/completar` | Marcar la actividad como completada | `200` |
+| `DELETE` | `/api/actividades/{id}` | Eliminar una actividad | `204` |
+
 ### Ejemplos de uso
 
 **Registrar empresas en lote**
@@ -253,7 +325,7 @@ curl -X POST http://localhost:8080/api/empresas/lote \
       ]'
 ```
 
-> La operación en lote es **transaccional**: todos los registros se validan antes de persistirse y, si alguno no es válido, no se guarda ninguno.
+> Todos los registros del lote se validan antes de persistirse: si alguno no es válido, no se guarda ninguno.
 
 **Búsqueda de empresas con filtros combinables**
 
@@ -271,20 +343,26 @@ curl -X POST http://localhost:8080/api/contactos \
   -d '{"nombre":"Ana","apellidos":"López García","cargo":"Directora de compras","email":"ana@acme.com","empresaId":1}'
 ```
 
-**Registrar una oportunidad**
+**Registrar una oportunidad y avanzarla en el embudo**
 
 ```bash
 curl -X POST http://localhost:8080/api/oportunidades \
   -H "Content-Type: application/json" \
   -d '{"titulo":"Renovación de 50 licencias","importe":12000.50,"fechaCierrePrevista":"2026-12-15","empresaId":1,"contactoId":1}'
-```
 
-**Avanzar una oportunidad en el embudo**
-
-```bash
 curl -X PATCH http://localhost:8080/api/oportunidades/1/fase \
   -H "Content-Type: application/json" \
   -d '{"fase":"NEGOCIACION"}'
+```
+
+**Registrar y completar una actividad**
+
+```bash
+curl -X POST http://localhost:8080/api/actividades \
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"LLAMADA","asunto":"Llamar para cerrar el presupuesto","fecha":"2026-11-20T10:00:00","empresaId":1}'
+
+curl -X PATCH http://localhost:8080/api/actividades/1/completar
 ```
 
 **Consultas relacionadas**
@@ -292,14 +370,16 @@ curl -X PATCH http://localhost:8080/api/oportunidades/1/fase \
 ```bash
 curl http://localhost:8080/api/empresas/1/contactos
 curl http://localhost:8080/api/empresas/1/oportunidades
+curl http://localhost:8080/api/empresas/1/actividades
 curl "http://localhost:8080/api/oportunidades?fase=PROPUESTA"
+curl http://localhost:8080/api/actividades/vencidas
 ```
 
 ---
 
 ## Reglas de validación y errores
 
-Las validaciones se aplican en la capa de servicio y los errores se traducen a códigos HTTP en `GlobalExceptionHandler`.
+Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicios de aplicación**. Las excepciones se traducen a códigos HTTP en `GlobalExceptionHandler` (`@RestControllerAdvice`).
 
 ### Empresas
 
@@ -310,6 +390,7 @@ Las validaciones se aplican en la capa de servicio y los errores se traducen a c
 | Identificador inexistente | `404` | `Empresa no encontrada con id {id}` |
 | Borrar una empresa con contactos | `409` | `No se puede borrar la empresa {id} porque tiene contactos` |
 | Borrar una empresa con oportunidades | `409` | `No se puede borrar la empresa {id} porque tiene oportunidades` |
+| Borrar una empresa con actividades | `409` | `No se puede borrar la empresa {id} porque tiene actividades` |
 
 ### Contactos
 
@@ -334,6 +415,18 @@ Las validaciones se aplican en la capa de servicio y los errores se traducen a c
 | `fase` nula en el `PATCH` | `400` | `La fase es obligatoria` |
 | Oportunidad, empresa o contacto inexistentes | `404` | `… no encontrad… con id {id}` |
 
+### Actividades
+
+| Condición | Código | Mensaje |
+|---|---|---|
+| `tipo` nulo | `400` | `El tipo de la actividad es obligatorio` |
+| `asunto` nulo o vacío | `400` | `El asunto de la actividad es obligatorio` |
+| `fecha` nula | `400` | `La fecha de la actividad es obligatoria` |
+| `empresaId` nulo | `400` | `La empresa de la actividad es obligatoria` |
+| Empresa inexistente | `400` | `La empresa {id} no existe` |
+| Actividad inexistente | `404` | `Actividad no encontrada con id {id}` |
+| Completar una actividad ya completada | `409` | `La actividad {id} ya está completada` |
+
 ### Formato de error
 
 Todas las respuestas de error gestionadas comparten el mismo formato:
@@ -352,42 +445,52 @@ Como red de seguridad, cualquier operación que la base de datos rechace por int
 
 ## Pruebas
 
-Todos los endpoints de la API han sido verificados mediante **pruebas funcionales con Postman**, cubriendo:
+El proyecto cuenta con **37 tests automatizados**:
 
-- Operaciones CRUD completas sobre empresas, contactos y oportunidades.
-- Filtros de empresas y búsqueda con filtros combinables.
-- Registro en lote, incluido el comportamiento transaccional ante datos no válidos.
-- Consultas anidadas (`/api/empresas/{id}/contactos` y `/oportunidades`) y filtro por fase.
-- Cambio de fase mediante `PATCH`.
-- Respuestas `400`, `404` y `409` ante datos no válidos, recursos inexistentes y borrados con datos relacionados.
+| Tipo | Clases | Qué comprueban |
+|---|---|---|
+| **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
+| **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
+| **Arranque** | `GestionComercialApplicationTests` | Que la aplicación arranca y Spring conecta todos los puertos con sus adaptadores |
 
-La incorporación de **tests automatizados** (JUnit + MockMvc) forma parte de la hoja de ruta.
+Los tests de integración usan una base de datos H2 **en memoria** y deshacen sus cambios al terminar cada test (`@Transactional`).
+
+```bash
+# Linux / macOS
+./mvnw test
+
+# Windows (PowerShell)
+.\mvnw.cmd test
+```
+
+Además, los endpoints se han verificado manualmente con **Postman** y **Swagger UI**.
 
 ---
 
 ## Hoja de ruta
-
-El objetivo del proyecto es evolucionar hacia un CRM completo. Funcionalidades planificadas:
 
 | Fase | Funcionalidad | Estado |
 |---|---|---|
 | 1 | Gestión de empresas (CRUD, filtros, alta en lote) | Completado |
 | 1 | Filtros dinámicos combinables con JPA Specifications | Completado |
 | 1 | DTOs de entrada y salida | Completado |
-| 1 | Gestión centralizada de errores (`@RestControllerAdvice`) con respuestas 400 / 404 / 409 | Completado |
-| 1 | Tests automatizados de integración | Pendiente |
+| 1 | Gestión centralizada de errores con respuestas 400 / 404 / 409 | Completado |
 | 2 | Gestión de **contactos** asociados a cada empresa | Completado |
 | 2 | Gestión de **oportunidades de venta** y embudo comercial | Completado |
-| 2 | Registro de **actividades** (llamadas, reuniones, correos, tareas) | Pendiente |
+| 2 | Registro de **actividades** (llamadas, reuniones, correos, tareas) | Completado |
+| 2 | Documentación interactiva de la API (OpenAPI / Swagger) | Completado |
+| 2 | Tests unitarios (JUnit + Mockito) y de integración (MockMvc) | Completado |
+| 2 | Migración a **arquitectura hexagonal** | Completado |
+| 3 | Base de datos **PostgreSQL** con **Docker Compose** | Pendiente |
 | 3 | **Usuarios, autenticación y roles** (Spring Security + JWT) | Pendiente |
+| 3 | Integración continua con **GitHub Actions** | Pendiente |
 | 3 | Paginación y ordenación de resultados | Pendiente |
-| 3 | Documentación interactiva de la API (OpenAPI / Swagger) | Pendiente |
-| 3 | Base de datos de producción (PostgreSQL / MySQL) | Pendiente |
 | 4 | Panel de métricas comerciales e informes | Pendiente |
 
 ---
 
 ## Limitaciones conocidas
 
-- H2 es una base de datos embebida pensada para desarrollo; está prevista la migración a PostgreSQL o MySQL.
+- H2 es una base de datos embebida pensada para desarrollo; está prevista la migración a PostgreSQL.
 - Los errores de formato en el JSON de entrada (por ejemplo, una `fase` que no existe) los devuelve Spring con su formato por defecto, distinto del de `ErrorResponse`.
+- Las actividades guardan la empresa solo por su identificador (sin clave foránea en la base de datos); la existencia de la empresa se comprueba en la aplicación al registrar la actividad y al intentar borrar la empresa.
