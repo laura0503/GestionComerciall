@@ -1,4 +1,4 @@
-package com.gestioncomercial.gestion_comercial;
+package com.gestioncomercial.gestion_comercial.oportunidad.domain.model;
 
 // fases del embudo de ventas: solo se admiten estos valores
 public enum Fase {

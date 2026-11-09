@@ -1,9 +1,5 @@
 package com.gestioncomercial.gestion_comercial.exception;
 
-import com.gestioncomercial.gestion_comercial.contacto.domain.exception.ContactoNoEncontradoException;
-
-import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
-
 import java.time.LocalDateTime;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,8 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+// cada módulo tiene sus excepciones en su domain/exception
 import com.gestioncomercial.gestion_comercial.actividad.domain.exception.ActividadNoEncontradaException;
 import com.gestioncomercial.gestion_comercial.actividad.domain.exception.ActividadYaCompletadaException;
+import com.gestioncomercial.gestion_comercial.contacto.domain.exception.ContactoNoEncontradoException;
+import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.oportunidad.domain.exception.OportunidadNoEncontradaException;
 
 // captura los errores de todos los controladores y decide el código HTTP
 @RestControllerAdvice // --> Hace que la clase "vigile" todos los @RestController. Cuando cualquiera

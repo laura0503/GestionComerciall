@@ -1,13 +1,5 @@
 package com.gestioncomercial.gestion_comercial;
 
-import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoJpaRepository;
-
-import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
-
-import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
-
-import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
-
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,6 +15,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoJpaRepository;
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
 
 // tests de integración: arrancan la aplicación entera y hacen peticiones HTTP
 // de verdad

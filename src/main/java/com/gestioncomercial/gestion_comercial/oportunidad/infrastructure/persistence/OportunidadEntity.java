@@ -1,11 +1,11 @@
-package com.gestioncomercial.gestion_comercial;
-
-import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
-
-import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+package com.gestioncomercial.gestion_comercial.oportunidad.infrastructure.persistence;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
+import com.gestioncomercial.gestion_comercial.oportunidad.domain.model.Fase;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,10 +16,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
-@Entity // tabla OPORTUNIDAD
-public class Oportunidad {
-    @Id // clave primaria
+// la TABLA de oportunidades. Los @ManyToOne se quedan aquí (claves foráneas en la BD)
+@Entity
+@Table(name = "oportunidad") // el nombre de siempre, para no perder datos
+public class OportunidadEntity {
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String titulo;
@@ -32,15 +35,15 @@ public class Oportunidad {
 
     private LocalDate fechaCierrePrevista;
 
-    @ManyToOne // muchas oportunidades pertenecen a una empresa
+    @ManyToOne
     @JoinColumn(name = "empresa_id", nullable = false) // clave foránea obligatoria
     private EmpresaEntity empresa;
 
-    @ManyToOne // contacto principal de la oportunidad
+    @ManyToOne
     @JoinColumn(name = "contacto_id") // opcional: puede ser null
     private ContactoEntity contacto;
 
-    public Oportunidad(Long id, String titulo, BigDecimal importe, Fase fase, LocalDate fechaCierrePrevista,
+    public OportunidadEntity(Long id, String titulo, BigDecimal importe, Fase fase, LocalDate fechaCierrePrevista,
             EmpresaEntity empresa, ContactoEntity contacto) {
         this.id = id;
         this.titulo = titulo;
@@ -51,62 +54,35 @@ public class Oportunidad {
         this.contacto = contacto;
     }
 
-    public Oportunidad() {
+    // JPA necesita un constructor vacío
+    public OportunidadEntity() {
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getTitulo() {
         return titulo;
-    }
-
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
     }
 
     public BigDecimal getImporte() {
         return importe;
     }
 
-    public void setImporte(BigDecimal importe) {
-        this.importe = importe;
-    }
-
     public Fase getFase() {
         return fase;
-    }
-
-    public void setFase(Fase fase) {
-        this.fase = fase;
     }
 
     public LocalDate getFechaCierrePrevista() {
         return fechaCierrePrevista;
     }
 
-    public void setFechaCierrePrevista(LocalDate fechaCierrePrevista) {
-        this.fechaCierrePrevista = fechaCierrePrevista;
-    }
-
     public EmpresaEntity getEmpresa() {
         return empresa;
     }
 
-    public void setEmpresa(EmpresaEntity empresa) {
-        this.empresa = empresa;
-    }
-
     public ContactoEntity getContacto() {
         return contacto;
-    }
-
-    public void setContacto(ContactoEntity contacto) {
-        this.contacto = contacto;
     }
 }

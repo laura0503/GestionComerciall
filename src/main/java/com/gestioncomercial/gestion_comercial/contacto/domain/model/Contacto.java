@@ -41,11 +41,6 @@ public class Contacto {
         this.empresaId = empresaId;
     }
 
-    // ¿es de esta empresa? (lo necesitará Oportunidad)
-    public boolean perteneceA(Long otraEmpresaId) {
-        return empresaId.equals(otraEmpresaId);
-    }
-
     private static void validar(String nombre, String email, Long empresaId) {
         if (nombre == null || nombre.isBlank()) {
             throw new IllegalArgumentException("El nombre del contacto es obligatorio");

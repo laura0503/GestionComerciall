@@ -1,17 +1,19 @@
-package com.gestioncomercial.gestion_comercial;
+package com.gestioncomercial.gestion_comercial.oportunidad.infrastructure.persistence;
 
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-// conexión con la tabla OPORTUNIDAD
-public interface OportunidadRepository extends JpaRepository<Oportunidad, Long> {
+import com.gestioncomercial.gestion_comercial.oportunidad.domain.model.Fase;
+
+// Spring Data (antes se llamaba OportunidadRepository)
+public interface OportunidadJpaRepository extends JpaRepository<OportunidadEntity, Long> {
 
     // SELECT * FROM OPORTUNIDAD WHERE EMPRESA_ID = ?
-    List<Oportunidad> findByEmpresaId(Long empresaId);
+    List<OportunidadEntity> findByEmpresaId(Long empresaId);
 
     // SELECT * FROM OPORTUNIDAD WHERE FASE = ?
-    List<Oportunidad> findByFase(Fase fase);
+    List<OportunidadEntity> findByFase(Fase fase);
 
     // ¿tiene la empresa alguna oportunidad? → true / false
     boolean existsByEmpresaId(Long empresaId);

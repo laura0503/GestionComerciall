@@ -1,6 +1,6 @@
-package com.gestioncomercial.gestion_comercial.exception;
+package com.gestioncomercial.gestion_comercial.oportunidad.domain.exception;
 
-// error propio para cuando una oportunidad no existe → 404
+// error de negocio: la oportunidad no existe → 404
 public class OportunidadNoEncontradaException extends RuntimeException {
 
     public OportunidadNoEncontradaException(Long id) {
