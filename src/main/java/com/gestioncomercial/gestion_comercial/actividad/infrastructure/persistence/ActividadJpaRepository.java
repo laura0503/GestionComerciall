@@ -9,4 +9,7 @@ public interface ActividadJpaRepository extends JpaRepository<ActividadEntity, L
     List<ActividadEntity> findByEmpresaId(Long empresaId); // WHERE empresa_id = ?
 
     List<ActividadEntity> findByCompletadaFalse(); // WHERE completada = false
+
+    // ¿tiene la empresa alguna actividad? → true / false
+    boolean existsByEmpresaId(Long empresaId);
 }

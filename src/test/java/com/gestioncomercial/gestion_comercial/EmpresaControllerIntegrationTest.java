@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
 
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
@@ -33,7 +37,7 @@ class EmpresaControllerIntegrationTest {
     private EmpresaJpaRepository empresaRepository;
 
     @Autowired
-    private ContactoRepository contactoRepository;
+    private ContactoJpaRepository contactoRepository;
 
     // guarda una empresa directamente en la BD de test
     private EmpresaEntity guardarEmpresa(String nombre, String provincia) {
@@ -91,7 +95,7 @@ class EmpresaControllerIntegrationTest {
     @DisplayName("DELETE de una empresa con contactos responde 409")
     void borrarConContactos() throws Exception {
         EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
-        contactoRepository.save(new Contacto(null, "Ana", null, null, null, null, acme));
+        contactoRepository.save(new ContactoEntity(null, "Ana", null, null, null, null, acme));
 
         mockMvc.perform(delete("/api/empresas/" + acme.getId()))
                 .andExpect(status().isConflict())

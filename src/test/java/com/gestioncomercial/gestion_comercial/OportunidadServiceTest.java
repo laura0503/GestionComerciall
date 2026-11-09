@@ -1,5 +1,9 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoJpaRepository;
+
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaJpaRepository;
 
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
@@ -35,7 +39,7 @@ class OportunidadServiceTest {
     private EmpresaJpaRepository empresaRepository;
 
     @Mock
-    private ContactoRepository contactoRepository;
+    private ContactoJpaRepository contactoRepository;
 
     @InjectMocks
     private OportunidadService oportunidadService;
@@ -80,7 +84,7 @@ class OportunidadServiceTest {
         // oportunidad para Acme (1) con Pepe (5), que es de Bar Pepe (2)
         OportunidadRequest request = new OportunidadRequest("50 licencias", new BigDecimal("100"), null, null,
                 1L, 5L);
-        Contacto pepe = new Contacto(5L, "Pepe", null, null, null, null, barPepe());
+        ContactoEntity pepe = new ContactoEntity(5L, "Pepe", null, null, null, null, barPepe());
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(acme()));
         when(contactoRepository.findById(5L)).thenReturn(Optional.of(pepe));
 

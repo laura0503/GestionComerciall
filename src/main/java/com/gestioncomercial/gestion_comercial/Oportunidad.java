@@ -1,5 +1,7 @@
 package com.gestioncomercial.gestion_comercial;
 
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
 
 import java.math.BigDecimal;
@@ -36,10 +38,10 @@ public class Oportunidad {
 
     @ManyToOne // contacto principal de la oportunidad
     @JoinColumn(name = "contacto_id") // opcional: puede ser null
-    private Contacto contacto;
+    private ContactoEntity contacto;
 
     public Oportunidad(Long id, String titulo, BigDecimal importe, Fase fase, LocalDate fechaCierrePrevista,
-            EmpresaEntity empresa, Contacto contacto) {
+            EmpresaEntity empresa, ContactoEntity contacto) {
         this.id = id;
         this.titulo = titulo;
         this.importe = importe;
@@ -100,11 +102,11 @@ public class Oportunidad {
         this.empresa = empresa;
     }
 
-    public Contacto getContacto() {
+    public ContactoEntity getContacto() {
         return contacto;
     }
 
-    public void setContacto(Contacto contacto) {
+    public void setContacto(ContactoEntity contacto) {
         this.contacto = contacto;
     }
 }

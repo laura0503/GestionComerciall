@@ -109,11 +109,25 @@ class EmpresaServiceTest {
     }
 
     @Test
-    @DisplayName("Borrar una empresa sin contactos ni oportunidades la borra")
+    @DisplayName("Borrar una empresa con actividades lanza 409 y no la borra")
+    void borrarConActividades() {
+        when(empresaRepository.buscarPorId(1L)).thenReturn(Optional.of(acme()));
+        when(datosRelacionados.tieneContactos(1L)).thenReturn(false);
+        when(datosRelacionados.tieneOportunidades(1L)).thenReturn(false);
+        when(datosRelacionados.tieneActividades(1L)).thenReturn(true);
+
+        ConflictoException error = assertThrows(ConflictoException.class, () -> empresaService.borrar(1L));
+        assertEquals("No se puede borrar la empresa 1 porque tiene actividades", error.getMessage());
+        verify(empresaRepository, never()).borrar(any());
+    }
+
+    @Test
+    @DisplayName("Borrar una empresa sin contactos, oportunidades ni actividades la borra")
     void borrarSinDatosRelacionados() {
         when(empresaRepository.buscarPorId(1L)).thenReturn(Optional.of(acme()));
         when(datosRelacionados.tieneContactos(1L)).thenReturn(false);
         when(datosRelacionados.tieneOportunidades(1L)).thenReturn(false);
+        when(datosRelacionados.tieneActividades(1L)).thenReturn(false);
 
         empresaService.borrar(1L);
 

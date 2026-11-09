@@ -1,4 +1,4 @@
-package com.gestioncomercial.gestion_comercial;
+package com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence;
 
 import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence.EmpresaEntity;
 
@@ -8,9 +8,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
+// la TABLA de contactos (antes se llamaba Contacto y hacía también de modelo).
+// El @ManyToOne se queda AQUÍ, en infraestructura: así la BD mantiene la clave foránea
 @Entity
-public class Contacto {
+@Table(name = "contacto") // el nombre de siempre, para no perder datos
+public class ContactoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,7 +24,7 @@ public class Contacto {
     @JoinColumn(name = "empresas_id", nullable = false) // clave foránea
     private EmpresaEntity empresa;
 
-    public Contacto(Long id, String nombre, String apellidos, String cargo, String email, String telefono,
+    public ContactoEntity(Long id, String nombre, String apellidos, String cargo, String email, String telefono,
             EmpresaEntity empresa) {
         this.id = id;
         this.nombre = nombre;
@@ -29,65 +33,37 @@ public class Contacto {
         this.email = email;
         this.telefono = telefono;
         this.empresa = empresa;
-
     }
 
-    public Contacto() {
+    // JPA necesita un constructor vacío
+    public ContactoEntity() {
     }
 
     public Long getId() {
-        return this.id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+        return id;
     }
 
     public String getNombre() {
         return nombre;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
     public String getApellidos() {
         return apellidos;
-    }
-
-    public void setApellidos(String apellidos) {
-        this.apellidos = apellidos;
     }
 
     public String getCargo() {
         return cargo;
     }
 
-    public void setCargo(String cargo) {
-        this.cargo = cargo;
-    }
-
     public String getEmail() {
         return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getTelefono() {
         return telefono;
     }
 
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
-    }
-
     public EmpresaEntity getEmpresa() {
         return empresa;
-    }
-
-    public void setEmpresa(EmpresaEntity empresa) {
-        this.empresa = empresa;
     }
 }

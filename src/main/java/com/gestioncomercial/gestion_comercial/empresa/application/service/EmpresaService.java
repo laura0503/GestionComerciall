@@ -82,6 +82,9 @@ public class EmpresaService implements CrearEmpresaUseCase, ConsultarEmpresasUse
         if (datosRelacionados.tieneOportunidades(id)) {
             throw new ConflictoException("No se puede borrar la empresa " + id + " porque tiene oportunidades");
         }
+        if (datosRelacionados.tieneActividades(id)) {
+            throw new ConflictoException("No se puede borrar la empresa " + id + " porque tiene actividades");
+        }
         empresaRepository.borrar(id);
     }
 

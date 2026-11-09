@@ -1,9 +1,10 @@
 package com.gestioncomercial.gestion_comercial.dto;
 
+import com.gestioncomercial.gestion_comercial.contacto.infrastructure.persistence.ContactoEntity;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.gestioncomercial.gestion_comercial.Contacto;
 import com.gestioncomercial.gestion_comercial.Fase;
 import com.gestioncomercial.gestion_comercial.Oportunidad;
 
@@ -14,7 +15,7 @@ public record OportunidadResponse(Long id, String titulo, BigDecimal importe, Fa
 
     // convierte la entidad de la BD en el DTO que se envía
     public static OportunidadResponse desde(Oportunidad oportunidad) {
-        Contacto contacto = oportunidad.getContacto(); // puede ser null: el contacto es opcional
+        ContactoEntity contacto = oportunidad.getContacto(); // puede ser null: el contacto es opcional
         return new OportunidadResponse(
                 oportunidad.getId(),
                 oportunidad.getTitulo(),
