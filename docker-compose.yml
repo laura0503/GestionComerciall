@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: gestionComercial
+    environment:
+      POSTGRES_DB: gestiondb
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432" # 5433 en Windows, porque el 5432 lo usa el PostgreSQL instalado en Windows
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

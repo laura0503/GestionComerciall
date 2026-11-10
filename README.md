@@ -30,7 +30,9 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 | Spring Boot | 4.1.2 | Framework principal (solo en la capa de infraestructura) |
 | Spring Web MVC | — | Exposición de la API REST |
 | Spring Data JPA | — | Persistencia y consultas (adaptadores de salida) |
-| H2 Database | — | Base de datos embebida en archivo para desarrollo |
+| PostgreSQL | 17 | Base de datos de la aplicación |
+| Docker Compose | — | Arranque de PostgreSQL en un contenedor |
+| H2 Database | — | Base de datos en memoria para los tests |
 | springdoc-openapi | 3.1.1 | Documentación interactiva de la API (Swagger UI) |
 | JUnit 5 + Mockito | — | Tests unitarios |
 | MockMvc | — | Tests de integración de la API |
@@ -44,9 +46,24 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 ### Requisitos
 
 - JDK 25
+- Docker con Docker Compose (en Windows sirve Docker Engine dentro de WSL 2, sin Docker Desktop)
 - No es necesario instalar Maven: el proyecto incluye Maven Wrapper (`mvnw`).
 
 ### Ejecución
+
+**1. Configurar las credenciales.** Copia `.env.example` como `.env` en la raíz del proyecto y pon tu usuario y contraseña. El archivo `.env` está excluido del control de versiones, de modo que las credenciales nunca se suben al repositorio.
+
+```bash
+cp .env.example .env
+```
+
+**2. Arrancar PostgreSQL** (desde la raíz del proyecto):
+
+```bash
+docker compose up -d
+```
+
+**3. Arrancar la aplicación:**
 
 ```bash
 # Linux / macOS
@@ -69,18 +86,24 @@ Desde Swagger UI se pueden probar las peticiones directamente desde el navegador
 
 ### Base de datos
 
-H2 guarda los datos en el archivo `data/gestiondb.mv.db`, de modo que **se conservan entre reinicios**. El esquema se crea y actualiza automáticamente al arrancar (`spring.jpa.hibernate.ddl-auto=update`).
-
-Para empezar con la base de datos vacía, detén la aplicación y elimina la carpeta `data/` (está excluida del control de versiones). Los tests usan una base de datos en memoria independiente, por lo que nunca modifican estos datos.
-
-**Consola H2:**
+La aplicación usa **PostgreSQL 17** en un contenedor Docker definido en `docker-compose.yml`. Spring Boot lee las credenciales del mismo archivo `.env` que usa Docker (`spring.config.import`), así que se configuran en un único sitio.
 
 | Parámetro | Valor |
 |---|---|
-| URL | `http://localhost:8080/h2-console` |
-| JDBC URL | `jdbc:h2:file:./data/gestiondb` |
-| Usuario | `sa` |
-| Contraseña | *(vacía)* |
+| Host y puerto | `localhost:5433` (se usa el 5433 para no chocar con un PostgreSQL instalado localmente en el 5432) |
+| Base de datos | `gestiondb` |
+| Usuario / contraseña | Los definidos en `.env` (`DB_USER`, `DB_PASSWORD`) |
+
+Los datos se guardan en el volumen de Docker `pgdata`, de modo que **se conservan aunque se borre el contenedor**. El esquema se crea y actualiza automáticamente al arrancar (`spring.jpa.hibernate.ddl-auto=update`).
+
+| Comando | Efecto |
+|---|---|
+| `docker compose up -d` | Arranca PostgreSQL en segundo plano |
+| `docker compose down` | Detiene y elimina el contenedor (los datos se conservan) |
+| `docker compose down -v` | Elimina también el volumen: **borra todos los datos** |
+| `docker exec -it gestionComercial psql -U <usuario> -d gestiondb` | Abre la consola SQL de PostgreSQL |
+
+Los tests usan una base de datos H2 en memoria independiente, por lo que no necesitan Docker y nunca modifican estos datos.
 
 ---
 
@@ -481,7 +504,7 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 | 2 | Documentación interactiva de la API (OpenAPI / Swagger) | Completado |
 | 2 | Tests unitarios (JUnit + Mockito) y de integración (MockMvc) | Completado |
 | 2 | Migración a **arquitectura hexagonal** | Completado |
-| 3 | Base de datos **PostgreSQL** con **Docker Compose** | Pendiente |
+| 3 | Base de datos **PostgreSQL** con **Docker Compose** | Completado |
 | 3 | **Usuarios, autenticación y roles** (Spring Security + JWT) | Pendiente |
 | 3 | Integración continua con **GitHub Actions** | Pendiente |
 | 3 | Paginación y ordenación de resultados | Pendiente |
@@ -491,6 +514,6 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 
 ## Limitaciones conocidas
 
-- H2 es una base de datos embebida pensada para desarrollo; está prevista la migración a PostgreSQL.
+- El esquema lo genera Hibernate (`ddl-auto=update`); no hay migraciones versionadas (Flyway o Liquibase).
 - Los errores de formato en el JSON de entrada (por ejemplo, una `fase` que no existe) los devuelve Spring con su formato por defecto, distinto del de `ErrorResponse`.
 - Las actividades guardan la empresa solo por su identificador (sin clave foránea en la base de datos); la existencia de la empresa se comprueba en la aplicación al registrar la actividad y al intentar borrar la empresa.

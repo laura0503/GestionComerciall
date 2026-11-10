@@ -34,3 +34,6 @@ build/
 
 ### Base de datos local ###
 data/
+
+### Secretos ###
+.env
