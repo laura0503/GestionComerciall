@@ -126,6 +126,29 @@ class OportunidadControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST con una fase que no existe responde 400 con nuestro formato de error")
+    void crearConFaseInexistente() throws Exception {
+        EmpresaEntity acme = guardarEmpresa("Acme");
+        String json = """
+                { "titulo": "50 licencias", "importe": 100, "fase": "INVENTADA", "empresaId": %d }
+                """.formatted(acme.getId());
+
+        mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.mensaje").value(
+                        "El cuerpo de la petición no es válido: revisa el formato del JSON y los valores enviados"));
+    }
+
+    @Test
+    @DisplayName("GET ?fase= con una fase que no existe responde 400 indicando el parámetro")
+    void filtrarConFaseInexistente() throws Exception {
+        mockMvc.perform(get("/api/oportunidades").param("fase", "INVENTADA"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("El parámetro 'fase' tiene un valor no válido: 'INVENTADA'"));
+    }
+
+    @Test
     @DisplayName("DELETE borra la oportunidad y después responde 404")
     void borrarOportunidad() throws Exception {
         EmpresaEntity acme = guardarEmpresa("Acme");

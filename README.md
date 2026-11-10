@@ -468,12 +468,12 @@ Como red de seguridad, cualquier operación que la base de datos rechace por int
 
 ## Pruebas
 
-El proyecto cuenta con **37 tests automatizados**:
+El proyecto cuenta con **52 tests automatizados**:
 
 | Tipo | Clases | Qué comprueban |
 |---|---|---|
-| **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
-| **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
+| **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest`, `ActividadServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
+| **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest`, `ActividadControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
 | **Arranque** | `GestionComercialApplicationTests` | Que la aplicación arranca y Spring conecta todos los puertos con sus adaptadores |
 
 Los tests de integración usan una base de datos H2 **en memoria** y deshacen sus cambios al terminar cada test (`@Transactional`).
@@ -515,5 +515,4 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 ## Limitaciones conocidas
 
 - El esquema lo genera Hibernate (`ddl-auto=update`); no hay migraciones versionadas (Flyway o Liquibase).
-- Los errores de formato en el JSON de entrada (por ejemplo, una `fase` que no existe) los devuelve Spring con su formato por defecto, distinto del de `ErrorResponse`.
 - Las actividades guardan la empresa solo por su identificador (sin clave foránea en la base de datos); la existencia de la empresa se comprueba en la aplicación al registrar la actividad y al intentar borrar la empresa.

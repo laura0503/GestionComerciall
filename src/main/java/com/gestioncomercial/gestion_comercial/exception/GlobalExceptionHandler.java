@@ -5,8 +5,10 @@ import java.time.LocalDateTime;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 // cada módulo tiene sus excepciones en su domain/exception
 import com.gestioncomercial.gestion_comercial.actividad.domain.exception.ActividadNoEncontradaException;
@@ -83,5 +85,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ActividadYaCompletadaException.class)
     public ResponseEntity<ErrorResponse> actividadYaCompletada(ActividadYaCompletadaException e) {
         return construir(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    // el JSON del body no se puede leer: mal escrito, o un valor que no encaja
+    // (por ejemplo "fase": "INVENTADA" o "importe": "mucho") → 400
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> jsonInvalido(HttpMessageNotReadableException e) {
+        return construir(HttpStatus.BAD_REQUEST,
+                "El cuerpo de la petición no es válido: revisa el formato del JSON y los valores enviados");
+    }
+
+    // un valor de la URL no es del tipo esperado
+    // (por ejemplo /api/empresas/abc o ?fase=INVENTADA) → 400
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> parametroInvalido(MethodArgumentTypeMismatchException e) {
+        return construir(HttpStatus.BAD_REQUEST,
+                "El parámetro '" + e.getName() + "' tiene un valor no válido: '" + e.getValue() + "'");
     }
 }
