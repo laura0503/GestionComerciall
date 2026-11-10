@@ -1,5 +1,7 @@
 # Gestión Comercial — CRM
 
+![CI](https://github.com/laura0503/GestionComerciall/actions/workflows/ci.yml/badge.svg)
+
 Backend de un **CRM (Customer Relationship Management)** desarrollado con **Spring Boot** y **arquitectura hexagonal**, orientado a la gestión de la cartera comercial de una empresa: clientes y potenciales clientes, sus personas de contacto, las oportunidades de venta abiertas con cada uno y las actividades comerciales (llamadas, reuniones, correos y tareas).
 
 La versión actual implementa cuatro módulos relacionados entre sí: **Empresas**, **Contactos**, **Oportunidades de venta** y **Actividades**.
@@ -25,7 +27,7 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 ## Stack tecnológico
 
 | Tecnología | Versión | Uso |
-|---|---|---|
+| --- | --- | --- |
 | Java | 25 | Lenguaje de desarrollo |
 | Spring Boot | 4.1.2 | Framework principal (solo en la capa de infraestructura) |
 | Spring Web MVC | — | Exposición de la API REST |
@@ -99,7 +101,7 @@ Desde Swagger UI se pueden probar las peticiones directamente desde el navegador
 La aplicación usa **PostgreSQL 17** en un contenedor Docker definido en `docker-compose.yml`. Spring Boot lee las credenciales del mismo archivo `.env` que usa Docker (`spring.config.import`), así que se configuran en un único sitio.
 
 | Parámetro | Valor |
-|---|---|
+| --- | --- |
 | Host y puerto | `localhost:5433` (se usa el 5433 para no chocar con un PostgreSQL instalado localmente en el 5432) |
 | Base de datos | `gestiondb` |
 | Usuario / contraseña | Los definidos en `.env` (`DB_USER`, `DB_PASSWORD`) |
@@ -107,7 +109,7 @@ La aplicación usa **PostgreSQL 17** en un contenedor Docker definido en `docker
 Los datos se guardan en el volumen de Docker `pgdata`, de modo que **se conservan aunque se borre el contenedor**. El esquema se crea y actualiza automáticamente al arrancar (`spring.jpa.hibernate.ddl-auto=update`).
 
 | Comando | Efecto |
-|---|---|
+| --- | --- |
 | `docker compose up -d` | Arranca PostgreSQL en segundo plano |
 | `docker compose down` | Detiene y elimina el contenedor (los datos se conservan) |
 | `docker compose down -v` | Elimina también el volumen: **borra todos los datos** |
@@ -168,7 +170,7 @@ com.gestioncomercial.gestion_comercial
 ### Responsabilidades
 
 | Capa | Pieza | Responsabilidad |
-|---|---|---|
+| --- | --- | --- |
 | **Dominio** | `Empresa`, `Contacto`, `Oportunidad`, `Actividad` | Datos y reglas de negocio. Se crean con métodos de fábrica (`nueva()`) que validan, y solo cambian a través de métodos que aplican las reglas (`actualizar()`, `cambiarFase()`, `completar()`) |
 | **Aplicación** | Puertos `in` (`CrearEmpresaUseCase`, `CambiarFaseUseCase`…) | Contratos de entrada: una interfaz por acción de negocio |
 | | Puertos `out` (`EmpresaRepositoryPort`, `DatosRelacionadosPort`…) | Contratos de salida: lo que el núcleo necesita, sin saber cómo se obtiene |
@@ -205,7 +207,7 @@ En todos los módulos, el `id` lo asigna la base de datos: si el cliente lo incl
 ### Empresa
 
 | Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `id` | `Long` | Autogenerado | Identificador único |
 | `nombre` | `String` | Sí | Razón social o nombre comercial |
 | `sector` | `String` | Sí | Sector de actividad |
@@ -219,7 +221,7 @@ En todos los módulos, el `id` lo asigna la base de datos: si el cliente lo incl
 ### Contacto
 
 | Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `id` | `Long` | Autogenerado | Identificador único |
 | `nombre` | `String` | Sí | Nombre de pila |
 | `apellidos` | `String` | No | Apellidos |
@@ -240,7 +242,7 @@ La respuesta incluye además `empresaNombre`:
 ### Oportunidad
 
 | Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `id` | `Long` | Autogenerado | Identificador único |
 | `titulo` | `String` | Sí | Descripción breve de la venta |
 | `importe` | `BigDecimal` | Sí | Importe estimado (no negativo, 2 decimales) |
@@ -262,7 +264,7 @@ La respuesta incluye además `empresaNombre` y `contactoNombre`:
 #### Embudo de ventas
 
 | Fase | Significado |
-|---|---|
+| --- | --- |
 | `PROSPECCION` | Se ha detectado una posible venta |
 | `CUALIFICACION` | Hay interés real y presupuesto |
 | `PROPUESTA` | Se ha enviado presupuesto |
@@ -273,7 +275,7 @@ La respuesta incluye además `empresaNombre` y `contactoNombre`:
 ### Actividad
 
 | Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `id` | `Long` | Autogenerado | Identificador único |
 | `tipo` | `TipoActividad` | Sí | `LLAMADA`, `REUNION`, `EMAIL` o `TAREA` |
 | `asunto` | `String` | Sí | Descripción breve |
@@ -300,7 +302,7 @@ La documentación completa e interactiva está disponible en [Swagger UI](#docum
 ### Empresas
 
 | Método | Endpoint | Descripción | Respuesta |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `GET` | `/api/empresas` | Listar todas las empresas | `200` |
 | `GET` | `/api/empresas/{id}` | Obtener una empresa | `200` |
 | `GET` | `/api/empresas/buscar` | Búsqueda con filtros combinables (`nombre`, `sector`, `provincia`, `estado`) | `200` |
@@ -314,7 +316,7 @@ La documentación completa e interactiva está disponible en [Swagger UI](#docum
 ### Contactos
 
 | Método | Endpoint | Descripción | Respuesta |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `GET` | `/api/contactos` | Listar todos los contactos | `200` |
 | `GET` | `/api/contactos/{id}` | Obtener un contacto | `200` |
 | `GET` | `/api/empresas/{empresaId}/contactos` | Contactos de una empresa | `200` |
@@ -325,7 +327,7 @@ La documentación completa e interactiva está disponible en [Swagger UI](#docum
 ### Oportunidades
 
 | Método | Endpoint | Descripción | Respuesta |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `GET` | `/api/oportunidades` | Listar todas; admite `?fase=PROPUESTA` | `200` |
 | `GET` | `/api/oportunidades/{id}` | Obtener una oportunidad | `200` |
 | `GET` | `/api/empresas/{empresaId}/oportunidades` | Oportunidades de una empresa | `200` |
@@ -337,7 +339,7 @@ La documentación completa e interactiva está disponible en [Swagger UI](#docum
 ### Actividades
 
 | Método | Endpoint | Descripción | Respuesta |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `GET` | `/api/actividades/{id}` | Obtener una actividad | `200` |
 | `GET` | `/api/actividades/vencidas` | Actividades pendientes cuya fecha ya ha pasado | `200` |
 | `GET` | `/api/empresas/{empresaId}/actividades` | Actividades de una empresa | `200` |
@@ -417,7 +419,7 @@ Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicio
 ### Empresas
 
 | Condición | Código | Mensaje |
-|---|---|---|
+| --- | --- | --- |
 | `nombre`, `sector`, `provincia` o `estado` nulos o vacíos | `400` | `El <campo> de la empresa es obligatorio` |
 | Lote nulo o vacío | `400` | `La lista de empresas no puede estar vacía` |
 | Identificador inexistente | `404` | `Empresa no encontrada con id {id}` |
@@ -428,7 +430,7 @@ Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicio
 ### Contactos
 
 | Condición | Código | Mensaje |
-|---|---|---|
+| --- | --- | --- |
 | `nombre` nulo o vacío | `400` | `El nombre del contacto es obligatorio` |
 | `empresaId` nulo | `400` | `La empresa del contacto es obligatoria` |
 | `email` sin `@` | `400` | `El email del contacto no es válido` |
@@ -439,7 +441,7 @@ Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicio
 ### Oportunidades
 
 | Condición | Código | Mensaje |
-|---|---|---|
+| --- | --- | --- |
 | `titulo` nulo o vacío | `400` | `El título de la oportunidad es obligatorio` |
 | `importe` nulo | `400` | `El importe de la oportunidad es obligatorio` |
 | `importe` negativo | `400` | `El importe no puede ser negativo` |
@@ -451,7 +453,7 @@ Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicio
 ### Actividades
 
 | Condición | Código | Mensaje |
-|---|---|---|
+| --- | --- | --- |
 | `tipo` nulo | `400` | `El tipo de la actividad es obligatorio` |
 | `asunto` nulo o vacío | `400` | `El asunto de la actividad es obligatorio` |
 | `fecha` nula | `400` | `La fecha de la actividad es obligatoria` |
@@ -481,7 +483,7 @@ Como red de seguridad, cualquier operación que la base de datos rechace por int
 El proyecto cuenta con **52 tests automatizados**:
 
 | Tipo | Clases | Qué comprueban |
-|---|---|---|
+| --- | --- | --- |
 | **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest`, `ActividadServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
 | **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest`, `ActividadControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
 | **Arranque** | `GestionComercialApplicationTests` | Que la aplicación arranca y Spring conecta todos los puertos con sus adaptadores |
@@ -503,7 +505,7 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 ## Hoja de ruta
 
 | Fase | Funcionalidad | Estado |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Gestión de empresas (CRUD, filtros, alta en lote) | Completado |
 | 1 | Filtros dinámicos combinables con JPA Specifications | Completado |
 | 1 | DTOs de entrada y salida | Completado |
