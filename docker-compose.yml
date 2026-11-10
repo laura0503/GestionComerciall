@@ -10,6 +10,28 @@ services:
       - "5433:5432" # 5433 en Windows, porque el 5432 lo usa el PostgreSQL instalado en Windows
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Docker pregunta cada 5 s "¿PostgreSQL ya acepta conexiones?"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d gestiondb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # tu API en un contenedor. Solo arranca con: docker compose --profile app up -d --build
+  app:
+    build: .
+    container_name: gestionComercial-app
+    profiles: ["app"]
+    environment:
+      # dentro de Docker, la app llega a la BD por el NOMBRE del servicio y su puerto interno
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gestiondb
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy # espera a que PostgreSQL esté listo de verdad
 
 volumes:
   pgdata:

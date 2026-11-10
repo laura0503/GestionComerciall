@@ -1,0 +1,8 @@
+# lo que Docker NO debe copiar al construir la imagen
+target/
+data/
+.git/
+.vscode/
+.idea/
+.env
+*.log

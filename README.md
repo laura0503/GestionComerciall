@@ -75,6 +75,16 @@ docker compose up -d
 
 La API queda disponible en `http://localhost:8080`.
 
+### Ejecución completa con Docker (sin instalar Java)
+
+La aplicación también se puede ejecutar en un contenedor. El `Dockerfile` compila el proyecto en una primera etapa (Maven + JDK) y lo ejecuta en una imagen ligera que solo contiene el JRE.
+
+```bash
+docker compose --profile app up -d --build
+```
+
+Este comando arranca PostgreSQL y la API, que espera a que la base de datos esté lista (`healthcheck`). Sin `--profile app`, `docker compose up -d` arranca solo PostgreSQL, para desarrollar ejecutando la aplicación desde el IDE.
+
 ### Documentación interactiva (Swagger)
 
 Con la aplicación arrancada, la documentación de todos los endpoints está en:
