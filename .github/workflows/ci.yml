@@ -1,0 +1,27 @@
+name: CI
+
+# cuándo se ejecuta: al subir a main y al abrir un pull request contra main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest   # un ordenador Linux de GitHub
+
+    steps:
+      # 1. descarga tu código
+      - uses: actions/checkout@v5
+
+      # 2. instala Java 25 y guarda en caché las dependencias de Maven
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # 3. lanza los tests
+      - name: Ejecutar tests
+        run: ./mvnw -B test
