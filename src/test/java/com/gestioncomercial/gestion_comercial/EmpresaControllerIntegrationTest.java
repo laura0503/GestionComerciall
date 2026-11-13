@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,103 +26,105 @@ import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence
 // de verdad
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 @Transactional // al acabar cada test se deshacen los cambios en la BD
 class EmpresaControllerIntegrationTest {
-    @Autowired
-    private MockMvc mockMvc; // el postman de los test
+        @Autowired
+        private MockMvc mockMvc; // el postman de los test
 
-    @Autowired
-    private EmpresaJpaRepository empresaRepository;
+        @Autowired
+        private EmpresaJpaRepository empresaRepository;
 
-    @Autowired
-    private ContactoJpaRepository contactoRepository;
+        @Autowired
+        private ContactoJpaRepository contactoRepository;
 
-    // guarda una empresa directamente en la BD de test
-    private EmpresaEntity guardarEmpresa(String nombre, String provincia) {
-        return empresaRepository.save(new EmpresaEntity(null, nombre, "Tecnología", provincia, "Cliente"));
-    }
+        // guarda una empresa directamente en la BD de test
+        private EmpresaEntity guardarEmpresa(String nombre, String provincia) {
+                return empresaRepository.save(new EmpresaEntity(null, nombre, "Tecnología", provincia, "Cliente"));
+        }
 
-    @Test
-    @DisplayName("POST /api/empresas crea la empresa y responde 201")
-    void crearEmpresa() throws Exception {
-        String json = """
-                { "nombre": "Acme", "sector": "Tecnología", "provincia": "Madrid", "estado": "Cliente" }
-                """;
+        @Test
+        @DisplayName("POST /api/empresas crea la empresa y responde 201")
+        void crearEmpresa() throws Exception {
+                String json = """
+                                { "nombre": "Acme", "sector": "Tecnología", "provincia": "Madrid", "estado": "Cliente" }
+                                """;
 
-        mockMvc.perform(post("/api/empresas")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNumber()) // la BD le ha puesto un id
-                .andExpect(jsonPath("$.nombre").value("Acme"));
-    }
+                mockMvc.perform(post("/api/empresas")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").isNumber()) // la BD le ha puesto un id
+                                .andExpect(jsonPath("$.nombre").value("Acme"));
+        }
 
-    @Test
-    @DisplayName("POST /api/empresas sin nombre responde 400 con el mensaje de error")
-    void crearSinNombre() throws Exception {
-        String json = """
-                  { "sector": "Tecnología", "provincia": "Madrid", "estado": "Cliente" }
-                """;
-        mockMvc.perform(post("/api/empresas")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)) // el body
-                .andExpect(status().isBadRequest()) // es 400
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.mensaje").value("El nombre de la empresa es obligatorio"));
+        @Test
+        @DisplayName("POST /api/empresas sin nombre responde 400 con el mensaje de error")
+        void crearSinNombre() throws Exception {
+                String json = """
+                                  { "sector": "Tecnología", "provincia": "Madrid", "estado": "Cliente" }
+                                """;
+                mockMvc.perform(post("/api/empresas")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)) // el body
+                                .andExpect(status().isBadRequest()) // es 400
+                                .andExpect(jsonPath("$.status").value(400))
+                                .andExpect(jsonPath("$.mensaje").value("El nombre de la empresa es obligatorio"));
 
-        /*
-         * status().isOk() 200
-         * status().isCreated() 201
-         * status().isNoContent() 204
-         * status().isBadRequest() 400
-         * status().isNotFound() 404
-         * status().isConflict() 409
-         */
+                /*
+                 * status().isOk() 200
+                 * status().isCreated() 201
+                 * status().isNoContent() 204
+                 * status().isBadRequest() 400
+                 * status().isNotFound() 404
+                 * status().isConflict() 409
+                 */
 
-    }
+        }
 
-    @Test
-    @DisplayName("GET /api/empresas/{id} de una empresa que no existe responde 404")
-    void buscarInexistente() throws Exception {
-        mockMvc.perform(get("/api/empresas/999999"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.mensaje").value("Empresa no encontrada con id 999999"));
-    }
+        @Test
+        @DisplayName("GET /api/empresas/{id} de una empresa que no existe responde 404")
+        void buscarInexistente() throws Exception {
+                mockMvc.perform(get("/api/empresas/999999"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.mensaje").value("Empresa no encontrada con id 999999"));
+        }
 
-    @Test
-    @DisplayName("DELETE de una empresa con contactos responde 409")
-    void borrarConContactos() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
-        contactoRepository.save(new ContactoEntity(null, "Ana", null, null, null, null, acme));
+        @Test
+        @DisplayName("DELETE de una empresa con contactos responde 409")
+        void borrarConContactos() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
+                contactoRepository.save(new ContactoEntity(null, "Ana", null, null, null, null, acme));
 
-        mockMvc.perform(delete("/api/empresas/" + acme.getId()))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.mensaje")
-                        .value("No se puede borrar la empresa " + acme.getId() + " porque tiene contactos"));
-    }
+                mockMvc.perform(delete("/api/empresas/" + acme.getId()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.mensaje")
+                                                .value("No se puede borrar la empresa " + acme.getId()
+                                                                + " porque tiene contactos"));
+        }
 
-    @Test
-    @DisplayName("DELETE de una empresa sin datos relacionados responde 204 y deja de existir")
-    void borrarSinRelacionados() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
+        @Test
+        @DisplayName("DELETE de una empresa sin datos relacionados responde 204 y deja de existir")
+        void borrarSinRelacionados() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme", "Madrid");
 
-        mockMvc.perform(delete("/api/empresas/" + acme.getId()))
-                .andExpect(status().isNoContent());
+                mockMvc.perform(delete("/api/empresas/" + acme.getId()))
+                                .andExpect(status().isNoContent());
 
-        // comprobamos que de verdad se ha borrado
-        mockMvc.perform(get("/api/empresas/" + acme.getId()))
-                .andExpect(status().isNotFound());
-    }
+                // comprobamos que de verdad se ha borrado
+                mockMvc.perform(get("/api/empresas/" + acme.getId()))
+                                .andExpect(status().isNotFound());
+        }
 
-    @Test
-    @DisplayName("GET /api/empresas/buscar?provincia=Madrid solo devuelve las de Madrid")
-    void buscarConFiltros() throws Exception {
-        guardarEmpresa("Acme", "Madrid");
-        guardarEmpresa("Bar Pepe", "Sevilla");
+        @Test
+        @DisplayName("GET /api/empresas/buscar?provincia=Madrid solo devuelve las de Madrid")
+        void buscarConFiltros() throws Exception {
+                guardarEmpresa("Acme", "Madrid");
+                guardarEmpresa("Bar Pepe", "Sevilla");
 
-        mockMvc.perform(get("/api/empresas/buscar").param("provincia", "Madrid"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1))) // la lista tiene 1 elemento
-                .andExpect(jsonPath("$[0].nombre").value("Acme")); // y es Acme
-    }
+                mockMvc.perform(get("/api/empresas/buscar").param("provincia", "Madrid"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$", hasSize(1))) // la lista tiene 1 elemento
+                                .andExpect(jsonPath("$[0].nombre").value("Acme")); // y es Acme
+        }
 }

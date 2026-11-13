@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,139 +27,143 @@ import com.jayway.jsonpath.JsonPath;
 // tests de integración de oportunidades: la cadena entera con la BD de test
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 @Transactional
 class OportunidadControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private EmpresaJpaRepository empresaRepository;
+        @Autowired
+        private EmpresaJpaRepository empresaRepository;
 
-    @Autowired
-    private ContactoJpaRepository contactoRepository;
+        @Autowired
+        private ContactoJpaRepository contactoRepository;
 
-    private EmpresaEntity guardarEmpresa(String nombre) {
-        return empresaRepository.save(new EmpresaEntity(null, nombre, "Tecnología", "Madrid", "Cliente"));
-    }
+        private EmpresaEntity guardarEmpresa(String nombre) {
+                return empresaRepository.save(new EmpresaEntity(null, nombre, "Tecnología", "Madrid", "Cliente"));
+        }
 
-    private ContactoEntity guardarContacto(String nombre, EmpresaEntity empresa) {
-        return contactoRepository.save(new ContactoEntity(null, nombre, null, null, null, null, empresa));
-    }
+        private ContactoEntity guardarContacto(String nombre, EmpresaEntity empresa) {
+                return contactoRepository.save(new ContactoEntity(null, nombre, null, null, null, null, empresa));
+        }
 
-    // crea una oportunidad por la API y devuelve su id
-    private Integer crearOportunidad(String titulo, Long empresaId, Long contactoId) throws Exception {
-        String json = """
-                { "titulo": "%s", "importe": 1000, "empresaId": %d, "contactoId": %s }
-                """.formatted(titulo, empresaId, contactoId);
-        String respuesta = mockMvc.perform(post("/api/oportunidades")
-                .contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(respuesta, "$.id");
-    }
+        // crea una oportunidad por la API y devuelve su id
+        private Integer crearOportunidad(String titulo, Long empresaId, Long contactoId) throws Exception {
+                String json = """
+                                { "titulo": "%s", "importe": 1000, "empresaId": %d, "contactoId": %s }
+                                """.formatted(titulo, empresaId, contactoId);
+                String respuesta = mockMvc.perform(post("/api/oportunidades")
+                                .contentType(MediaType.APPLICATION_JSON).content(json))
+                                .andExpect(status().isCreated())
+                                .andReturn().getResponse().getContentAsString();
+                return JsonPath.read(respuesta, "$.id");
+        }
 
-    @Test
-    @DisplayName("POST crea la oportunidad en PROSPECCION con los nombres de empresa y contacto")
-    void crearOportunidad() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        ContactoEntity ana = guardarContacto("Ana", acme);
-        String json = """
-                { "titulo": "50 licencias", "importe": 12000.50, "empresaId": %d, "contactoId": %d }
-                """.formatted(acme.getId(), ana.getId());
+        @Test
+        @DisplayName("POST crea la oportunidad en PROSPECCION con los nombres de empresa y contacto")
+        void crearOportunidad() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                ContactoEntity ana = guardarContacto("Ana", acme);
+                String json = """
+                                { "titulo": "50 licencias", "importe": 12000.50, "empresaId": %d, "contactoId": %d }
+                                """.formatted(acme.getId(), ana.getId());
 
-        mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.fase").value("PROSPECCION"))
-                .andExpect(jsonPath("$.empresaNombre").value("Acme"))
-                .andExpect(jsonPath("$.contactoId").value(ana.getId()))
-                .andExpect(jsonPath("$.contactoNombre").value("Ana"));
-    }
+                mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.fase").value("PROSPECCION"))
+                                .andExpect(jsonPath("$.empresaNombre").value("Acme"))
+                                .andExpect(jsonPath("$.contactoId").value(ana.getId()))
+                                .andExpect(jsonPath("$.contactoNombre").value("Ana"));
+        }
 
-    @Test
-    @DisplayName("POST con un contacto de otra empresa responde 400")
-    void crearConContactoDeOtraEmpresa() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        EmpresaEntity pepe = guardarEmpresa("Bar Pepe");
-        ContactoEntity luis = guardarContacto("Luis", pepe);
-        String json = """
-                { "titulo": "50 licencias", "importe": 100, "empresaId": %d, "contactoId": %d }
-                """.formatted(acme.getId(), luis.getId());
+        @Test
+        @DisplayName("POST con un contacto de otra empresa responde 400")
+        void crearConContactoDeOtraEmpresa() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                EmpresaEntity pepe = guardarEmpresa("Bar Pepe");
+                ContactoEntity luis = guardarContacto("Luis", pepe);
+                String json = """
+                                { "titulo": "50 licencias", "importe": 100, "empresaId": %d, "contactoId": %d }
+                                """.formatted(acme.getId(), luis.getId());
 
-        mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje")
-                        .value("El contacto " + luis.getId() + " no pertenece a la empresa " + acme.getId()));
-    }
+                mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.mensaje")
+                                                .value("El contacto " + luis.getId() + " no pertenece a la empresa "
+                                                                + acme.getId()));
+        }
 
-    @Test
-    @DisplayName("PATCH /fase mueve la oportunidad y GET ?fase= la encuentra")
-    void cambiarFaseYFiltrar() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        Integer id = crearOportunidad("50 licencias", acme.getId(), null);
-        crearOportunidad("Otra", acme.getId(), null); // se queda en PROSPECCION
+        @Test
+        @DisplayName("PATCH /fase mueve la oportunidad y GET ?fase= la encuentra")
+        void cambiarFaseYFiltrar() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                Integer id = crearOportunidad("50 licencias", acme.getId(), null);
+                crearOportunidad("Otra", acme.getId(), null); // se queda en PROSPECCION
 
-        mockMvc.perform(patch("/api/oportunidades/" + id + "/fase")
-                .contentType(MediaType.APPLICATION_JSON).content("""
-                        { "fase": "NEGOCIACION" }
-                        """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fase").value("NEGOCIACION"))
-                .andExpect(jsonPath("$.titulo").value("50 licencias"));
+                mockMvc.perform(patch("/api/oportunidades/" + id + "/fase")
+                                .contentType(MediaType.APPLICATION_JSON).content("""
+                                                { "fase": "NEGOCIACION" }
+                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.fase").value("NEGOCIACION"))
+                                .andExpect(jsonPath("$.titulo").value("50 licencias"));
 
-        mockMvc.perform(get("/api/oportunidades").param("fase", "NEGOCIACION"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id").value(id));
-    }
+                mockMvc.perform(get("/api/oportunidades").param("fase", "NEGOCIACION"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$", hasSize(1)))
+                                .andExpect(jsonPath("$[0].id").value(id));
+        }
 
-    @Test
-    @DisplayName("DELETE de un contacto que está en una oportunidad responde 409")
-    void borrarContactoConOportunidad() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        ContactoEntity ana = guardarContacto("Ana", acme);
-        crearOportunidad("50 licencias", acme.getId(), ana.getId());
+        @Test
+        @DisplayName("DELETE de un contacto que está en una oportunidad responde 409")
+        void borrarContactoConOportunidad() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                ContactoEntity ana = guardarContacto("Ana", acme);
+                crearOportunidad("50 licencias", acme.getId(), ana.getId());
 
-        mockMvc.perform(delete("/api/contactos/" + ana.getId()))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.mensaje")
-                        .value("No se puede borrar el contacto " + ana.getId() + " porque tiene oportunidades"));
-    }
+                mockMvc.perform(delete("/api/contactos/" + ana.getId()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.mensaje")
+                                                .value("No se puede borrar el contacto " + ana.getId()
+                                                                + " porque tiene oportunidades"));
+        }
 
-    @Test
-    @DisplayName("POST con una fase que no existe responde 400 con nuestro formato de error")
-    void crearConFaseInexistente() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        String json = """
-                { "titulo": "50 licencias", "importe": 100, "fase": "INVENTADA", "empresaId": %d }
-                """.formatted(acme.getId());
+        @Test
+        @DisplayName("POST con una fase que no existe responde 400 con nuestro formato de error")
+        void crearConFaseInexistente() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                String json = """
+                                { "titulo": "50 licencias", "importe": 100, "fase": "INVENTADA", "empresaId": %d }
+                                """.formatted(acme.getId());
 
-        mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.mensaje").value(
-                        "El cuerpo de la petición no es válido: revisa el formato del JSON y los valores enviados"));
-    }
+                mockMvc.perform(post("/api/oportunidades").contentType(MediaType.APPLICATION_JSON).content(json))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.status").value(400))
+                                .andExpect(jsonPath("$.mensaje").value(
+                                                "El cuerpo de la petición no es válido: revisa el formato del JSON y los valores enviados"));
+        }
 
-    @Test
-    @DisplayName("GET ?fase= con una fase que no existe responde 400 indicando el parámetro")
-    void filtrarConFaseInexistente() throws Exception {
-        mockMvc.perform(get("/api/oportunidades").param("fase", "INVENTADA"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value("El parámetro 'fase' tiene un valor no válido: 'INVENTADA'"));
-    }
+        @Test
+        @DisplayName("GET ?fase= con una fase que no existe responde 400 indicando el parámetro")
+        void filtrarConFaseInexistente() throws Exception {
+                mockMvc.perform(get("/api/oportunidades").param("fase", "INVENTADA"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.mensaje")
+                                                .value("El parámetro 'fase' tiene un valor no válido: 'INVENTADA'"));
+        }
 
-    @Test
-    @DisplayName("DELETE borra la oportunidad y después responde 404")
-    void borrarOportunidad() throws Exception {
-        EmpresaEntity acme = guardarEmpresa("Acme");
-        Integer id = crearOportunidad("50 licencias", acme.getId(), null);
+        @Test
+        @DisplayName("DELETE borra la oportunidad y después responde 404")
+        void borrarOportunidad() throws Exception {
+                EmpresaEntity acme = guardarEmpresa("Acme");
+                Integer id = crearOportunidad("50 licencias", acme.getId(), null);
 
-        mockMvc.perform(delete("/api/oportunidades/" + id))
-                .andExpect(status().isNoContent());
+                mockMvc.perform(delete("/api/oportunidades/" + id))
+                                .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/oportunidades/" + id))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.mensaje").value("Oportunidad no encontrada con id " + id));
-    }
+                mockMvc.perform(get("/api/oportunidades/" + id))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.mensaje").value("Oportunidad no encontrada con id " + id));
+        }
 }
