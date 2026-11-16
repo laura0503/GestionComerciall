@@ -4,7 +4,7 @@
 
 Backend de un **CRM (Customer Relationship Management)** desarrollado con **Spring Boot** y **arquitectura hexagonal**, orientado a la gestión de la cartera comercial de una empresa: clientes y potenciales clientes, sus personas de contacto, las oportunidades de venta abiertas con cada uno y las actividades comerciales (llamadas, reuniones, correos y tareas).
 
-La versión actual implementa cuatro módulos relacionados entre sí: **Empresas**, **Contactos**, **Oportunidades de venta** y **Actividades**.
+La versión actual implementa cuatro módulos de negocio relacionados entre sí (**Empresas**, **Contactos**, **Oportunidades de venta** y **Actividades**) y un módulo de **Usuarios** que protege la API con **Spring Security y JWT**.
 
 > **Estado:** en desarrollo activo. Consulta la [hoja de ruta](#hoja-de-ruta) para ver las funcionalidades previstas.
 
@@ -14,6 +14,7 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 
 - [Stack tecnológico](#stack-tecnológico)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Seguridad](#seguridad)
 - [Arquitectura hexagonal](#arquitectura-hexagonal)
 - [Modelo de datos](#modelo-de-datos)
 - [API REST](#api-rest)
@@ -35,6 +36,8 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 | PostgreSQL | 17 | Base de datos de la aplicación |
 | Docker Compose | — | Arranque de PostgreSQL en un contenedor |
 | H2 Database | — | Base de datos en memoria para los tests |
+| Spring Security + OAuth2 Resource Server | — | Autenticación con tokens JWT y autorización por roles |
+| BCrypt | — | Cifrado de contraseñas |
 | springdoc-openapi | 3.1.1 | Documentación interactiva de la API (Swagger UI) |
 | JUnit 5 + Mockito | — | Tests unitarios |
 | MockMvc | — | Tests de integración de la API |
@@ -53,7 +56,13 @@ La versión actual implementa cuatro módulos relacionados entre sí: **Empresas
 
 ### Ejecución
 
-**1. Configurar las credenciales.** Copia `.env.example` como `.env` en la raíz del proyecto y pon tu usuario y contraseña. El archivo `.env` está excluido del control de versiones, de modo que las credenciales nunca se suben al repositorio.
+**1. Configurar las credenciales.** Copia `.env.example` como `.env` en la raíz del proyecto y rellena sus valores. El archivo `.env` está excluido del control de versiones, de modo que las credenciales nunca se suben al repositorio.
+
+| Variable | Uso |
+| --- | --- |
+| `DB_USER`, `DB_PASSWORD` | Usuario y contraseña de PostgreSQL |
+| `JWT_SECRETO` | Clave con la que se firman los tokens (mínimo 32 caracteres) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Primer usuario administrador, que se crea automáticamente al arrancar si no existe |
 
 ```bash
 cp .env.example .env
@@ -94,7 +103,7 @@ Con la aplicación arrancada, la documentación de todos los endpoints está en:
 - **Swagger UI:** `http://localhost:8080/swagger-ui.html`
 - **Especificación OpenAPI (JSON):** `http://localhost:8080/v3/api-docs`
 
-Desde Swagger UI se pueden probar las peticiones directamente desde el navegador.
+Desde Swagger UI se pueden probar las peticiones directamente desde el navegador. Como la API está protegida, primero hay que obtener un token (ver [Seguridad](#seguridad)) y pegarlo en el botón **Authorize**.
 
 ### Base de datos
 
@@ -116,6 +125,46 @@ Los datos se guardan en el volumen de Docker `pgdata`, de modo que **se conserva
 | `docker exec -it gestionComercial psql -U <usuario> -d gestiondb` | Abre la consola SQL de PostgreSQL |
 
 Los tests usan una base de datos H2 en memoria independiente, por lo que no necesitan Docker y nunca modifican estos datos.
+
+---
+
+## Seguridad
+
+La API está protegida con **Spring Security** y **tokens JWT**. Todas las peticiones, salvo el login y la documentación, necesitan un token válido.
+
+### Flujo
+
+```
+1. POST /api/auth/login { email, password }  ──►  { token, email, rol }
+2. Cualquier petición + cabecera "Authorization: Bearer <token>"
+3. Spring Security valida la firma y la caducidad del token  ──►  sin token o token no válido: 401
+4. Lee el rol del token y aplica las reglas                   ──►  sin permiso: 403
+```
+
+### Roles y permisos
+
+| Acción | Sin token | `COMERCIAL` | `ADMIN` |
+| --- | --- | --- | --- |
+| `POST /api/auth/login` | ✅ | ✅ | ✅ |
+| Swagger UI y `/v3/api-docs` | ✅ | ✅ | ✅ |
+| Consultar, crear y modificar datos | 401 | ✅ | ✅ |
+| Borrar cualquier recurso (`DELETE`) | 401 | 403 | ✅ |
+| Crear usuarios (`POST /api/auth/registro`) | 401 | 403 | ✅ |
+
+El primer `ADMIN` se crea automáticamente al arrancar con los datos de `ADMIN_EMAIL` y `ADMIN_PASSWORD`. A partir de ahí, solo un administrador puede dar de alta usuarios nuevos; si no se indica rol, el usuario se crea como `COMERCIAL`.
+
+### Detalles de implementación
+
+- **Contraseñas cifradas con BCrypt.** Nunca se guardan ni se devuelven en texto plano.
+- **Tokens JWT firmados con HS256** usando `JWT_SECRETO`. Contienen el email (`sub`), el rol (`rol`) y la fecha de caducidad (60 minutos). El servidor no guarda sesiones (*stateless*): cada petición se valida por su firma.
+- **Mismo mensaje para email inexistente y contraseña incorrecta** (`401 Email o contraseña incorrectos`), para no revelar qué emails están registrados.
+- **Encaje en la arquitectura hexagonal:** el módulo `usuario` define los puertos `CifradorPasswordPort` y `GeneradorTokenPort`, implementados en infraestructura por `BCryptCifradorAdapter` y `JwtGeneradorTokenAdapter`. Las reglas de acceso viven en `config/SecurityConfig`, de modo que los controladores de negocio no cambian.
+
+### Usar el token en Swagger
+
+1. Ejecutar `POST /api/auth/login` con el email y la contraseña.
+2. Copiar el valor de `token` de la respuesta.
+3. Pulsar **Authorize**, pegar el token y confirmar. Swagger lo enviará en todas las peticiones.
 
 ---
 
@@ -163,8 +212,9 @@ com.gestioncomercial.gestion_comercial
 ├── contacto/               (misma estructura)
 ├── oportunidad/            (misma estructura)
 ├── actividad/              (misma estructura)
+├── usuario/                (misma estructura + infrastructure/security: BCrypt y JWT)
 ├── exception/              Gestión común de errores (GlobalExceptionHandler)
-└── config/                 Configuración común (OpenAPI)
+└── config/                 Configuración común (OpenAPI y Spring Security)
 ```
 
 ### Responsabilidades
@@ -462,6 +512,13 @@ Las reglas de negocio se aplican en el **modelo de dominio** y en los **servicio
 | Actividad inexistente | `404` | `Actividad no encontrada con id {id}` |
 | Completar una actividad ya completada | `409` | `La actividad {id} ya está completada` |
 
+### Autenticación
+
+| Método | Endpoint | Acceso | Descripción |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/login` | Público | Devuelve un token JWT junto con el email y el rol |
+| `POST` | `/api/auth/registro` | `ADMIN` | Crea un usuario (`email`, `password` de 8 caracteres o más y `rol` opcional) |
+
 ### Formato de error
 
 Todas las respuestas de error gestionadas comparten el mismo formato:
@@ -480,15 +537,18 @@ Como red de seguridad, cualquier operación que la base de datos rechace por int
 
 ## Pruebas
 
-El proyecto cuenta con **52 tests automatizados**:
+El proyecto cuenta con **69 tests automatizados**:
 
 | Tipo | Clases | Qué comprueban |
 | --- | --- | --- |
-| **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest`, `ActividadServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
-| **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest`, `ActividadControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
+| **Unitarios** (JUnit 5 + Mockito) | `EmpresaServiceTest`, `ContactoServiceTest`, `OportunidadServiceTest`, `ActividadServiceTest`, `UsuarioServiceTest` | Reglas de negocio de cada servicio, aislado de la base de datos: los **puertos de salida** se sustituyen por mocks |
+| **Integración** (MockMvc) | `EmpresaControllerIntegrationTest`, `ContactoControllerIntegrationTest`, `OportunidadControllerIntegrationTest`, `ActividadControllerIntegrationTest`, `AuthControllerIntegrationTest` | La cadena completa con peticiones HTTP reales: controller → caso de uso → servicio → adaptador JPA → base de datos |
+| **Seguridad** | `SeguridadIntegrationTest` | Con tokens reales: sin token → 401, token falso → 401, `COMERCIAL` no puede borrar ni crear usuarios → 403, `ADMIN` sí |
 | **Arranque** | `GestionComercialApplicationTests` | Que la aplicación arranca y Spring conecta todos los puertos con sus adaptadores |
 
-Los tests de integración usan una base de datos H2 **en memoria** y deshacen sus cambios al terminar cada test (`@Transactional`).
+Los tests de integración usan una base de datos H2 **en memoria** y deshacen sus cambios al terminar cada test (`@Transactional`). Los tests de negocio simulan un usuario autenticado con `@WithMockUser`; la seguridad se prueba aparte con tokens reales.
+
+Los tests se ejecutan automáticamente en **GitHub Actions** en cada push y pull request a `main`.
 
 ```bash
 # Linux / macOS
@@ -517,8 +577,8 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 | 2 | Tests unitarios (JUnit + Mockito) y de integración (MockMvc) | Completado |
 | 2 | Migración a **arquitectura hexagonal** | Completado |
 | 3 | Base de datos **PostgreSQL** con **Docker Compose** | Completado |
-| 3 | **Usuarios, autenticación y roles** (Spring Security + JWT) | Pendiente |
-| 3 | Integración continua con **GitHub Actions** | Pendiente |
+| 3 | **Usuarios, autenticación y roles** (Spring Security + JWT) | Completado |
+| 3 | Integración continua con **GitHub Actions** | Completado |
 | 3 | Paginación y ordenación de resultados | Pendiente |
 | 4 | Panel de métricas comerciales e informes | Pendiente |
 
@@ -526,5 +586,7 @@ Además, los endpoints se han verificado manualmente con **Postman** y **Swagger
 
 ## Limitaciones conocidas
 
+- Los tokens no se pueden revocar antes de que caduquen (no hay lista de tokens invalidados ni *refresh tokens*).
+- No hay endpoints para listar, modificar o desactivar usuarios.
 - El esquema lo genera Hibernate (`ddl-auto=update`); no hay migraciones versionadas (Flyway o Liquibase).
 - Las actividades guardan la empresa solo por su identificador (sin clave foránea en la base de datos); la existencia de la empresa se comprueba en la aplicación al registrar la actividad y al intentar borrar la empresa.

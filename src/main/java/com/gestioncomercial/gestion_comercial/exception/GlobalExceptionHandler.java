@@ -16,6 +16,7 @@ import com.gestioncomercial.gestion_comercial.actividad.domain.exception.Activid
 import com.gestioncomercial.gestion_comercial.contacto.domain.exception.ContactoNoEncontradoException;
 import com.gestioncomercial.gestion_comercial.empresa.domain.exception.EmpresaNoEncontradaException;
 import com.gestioncomercial.gestion_comercial.oportunidad.domain.exception.OportunidadNoEncontradaException;
+import com.gestioncomercial.gestion_comercial.usuario.domain.exception.CredencialesInvalidasException;
 
 // captura los errores de todos los controladores y decide el código HTTP
 @RestControllerAdvice // --> Hace que la clase "vigile" todos los @RestController. Cuando cualquiera
@@ -85,6 +86,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ActividadYaCompletadaException.class)
     public ResponseEntity<ErrorResponse> actividadYaCompletada(ActividadYaCompletadaException e) {
         return construir(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    // login incorrecto → 401
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<ErrorResponse> credencialesInvalidas(CredencialesInvalidasException e) {
+        return construir(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     // el JSON del body no se puede leer: mal escrito, o un valor que no encaja
