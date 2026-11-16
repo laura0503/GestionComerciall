@@ -26,7 +26,7 @@ import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence
 // de verdad
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser
+@WithMockUser(roles = "ADMIN") // usuario fingido ADMIN: puede borrar
 @Transactional // al acabar cada test se deshacen los cambios en la BD
 class EmpresaControllerIntegrationTest {
         @Autowired

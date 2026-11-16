@@ -27,7 +27,7 @@ import com.jayway.jsonpath.JsonPath;
 // tests de integración de oportunidades: la cadena entera con la BD de test
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser
+@WithMockUser(roles = "ADMIN") // usuario fingido ADMIN: puede borrar
 @Transactional
 class OportunidadControllerIntegrationTest {
 

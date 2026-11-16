@@ -25,7 +25,7 @@ import com.gestioncomercial.gestion_comercial.empresa.infrastructure.persistence
 // controller → caso de uso → service → adaptador JPA → BD (con su @ManyToOne)
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser
+@WithMockUser(roles = "ADMIN") // usuario fingido ADMIN: puede borrar
 @Transactional
 class ContactoControllerIntegrationTest {
 
